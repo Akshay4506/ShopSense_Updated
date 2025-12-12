@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Settings, LogOut, Lock, Store } from "lucide-react";
+import { User, Settings, LogOut, Lock, Store, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface UserProfileProps {
@@ -128,11 +128,12 @@ export function UserProfile({ initialProfile, onProfileUpdate }: UserProfileProp
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                        <Avatar className="h-10 w-10">
+                    <Button variant="ghost" className="relative h-10 rounded-full flex items-center gap-2 px-2 hover:bg-muted/50">
+                        <Avatar className="h-8 w-8">
                             <AvatarImage src="/placeholder-avatar.jpg" alt={user?.email || "User"} />
                             <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
                         </Avatar>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>

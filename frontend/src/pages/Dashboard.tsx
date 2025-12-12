@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/api/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Store, Package, Receipt, Calendar, BarChart3, History, LogOut, AlertTriangle } from "lucide-react";
+import { Store, Package, Receipt, Calendar, BarChart3, History } from "lucide-react";
+import { UserProfile } from "@/components/UserProfile";
 
 interface Profile {
   shopkeeper_name: string;
@@ -22,7 +23,7 @@ interface InventoryStats {
 }
 
 export default function Dashboard() {
-  const { user, signOut, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState<InventoryStats>({
@@ -70,11 +71,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -85,144 +81,110 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Store className="h-7 w-7 text-primary" />
+      {/* Header */}
+      <header className="bg-background border-b border-border">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2 text-green-700">
+            <Store className="h-6 w-6" />
             <span className="text-xl font-bold text-foreground">ShopSense</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut className="h-5 w-5" />
-            </Button>
+            <UserProfile initialProfile={profile} onProfileUpdate={fetchProfile} />
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
-        {profile && (
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground">
-              Welcome, {profile.shopkeeper_name}!
-            </h1>
-            <p className="text-muted-foreground">{profile.shop_name}</p>
-          </div>
-        )}
+      <main className="container mx-auto px-6 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-1">
+            Welcome, {profile?.shopkeeper_name || "Shopkeeper"}!
+          </h1>
+          <p className="text-muted-foreground text-lg">{profile?.shop_name || "Loading..."}</p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Items</CardDescription>
-              <CardTitle className="text-3xl">{stats.totalItems}</CardTitle>
-            </CardHeader>
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="shadow-sm border-border/50">
+            <CardContent className="p-6">
+              <p className="text-sm text-muted-foreground mb-2">Total Items</p>
+              <p className="text-4xl font-semibold text-foreground">{stats.totalItems}</p>
+            </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Inventory Value</CardDescription>
-              <CardTitle className="text-3xl">₹{stats.totalValue.toLocaleString()}</CardTitle>
-            </CardHeader>
+          <Card className="shadow-sm border-border/50">
+            <CardContent className="p-6">
+              <p className="text-sm text-muted-foreground mb-2">Inventory Value</p>
+              <p className="text-4xl font-semibold text-foreground">₹{stats.totalValue.toLocaleString()}</p>
+            </CardContent>
           </Card>
 
-          <Card className={stats.lowStockCount > 0 ? "border-yellow-500" : ""}>
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-1">
-                {stats.lowStockCount > 0 && <AlertTriangle className="h-4 w-4 text-yellow-500" />}
-                Low Stock
-              </CardDescription>
-              <CardTitle className="text-3xl">{stats.lowStockCount}</CardTitle>
-            </CardHeader>
+          <Card className="shadow-sm border-border/50">
+            <CardContent className="p-6">
+              <p className="text-sm text-muted-foreground mb-2">Low Stock</p>
+              <p className="text-4xl font-semibold text-foreground">{stats.lowStockCount}</p>
+            </CardContent>
           </Card>
 
-          <Card className={stats.outOfStockCount > 0 ? "border-destructive" : ""}>
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-1">
-                {stats.outOfStockCount > 0 && <AlertTriangle className="h-4 w-4 text-destructive" />}
-                Out of Stock
-              </CardDescription>
-              <CardTitle className="text-3xl">{stats.outOfStockCount}</CardTitle>
-            </CardHeader>
+          <Card className="shadow-sm border-border/50">
+            <CardContent className="p-6">
+              <p className="text-sm text-muted-foreground mb-2">Out of Stock</p>
+              <p className="text-4xl font-semibold text-foreground">{stats.outOfStockCount}</p>
+            </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <Card
-            className="cursor-pointer hover:border-primary transition-colors"
+        {/* Actions Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <ActionCard
+            icon={<Package className="h-5 w-5" />}
+            title="Inventory"
             onClick={() => navigate("/inventory")}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Package className="h-4 w-4 text-primary" />
-                Inventory
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Button className="w-full" size="sm">Open</Button>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:border-primary transition-colors"
+          />
+          <ActionCard
+            icon={<Receipt className="h-5 w-5" />}
+            title="Billing"
             onClick={() => navigate("/billing")}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Receipt className="h-4 w-4 text-primary" />
-                Billing
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Button className="w-full" size="sm">Open</Button>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:border-primary transition-colors"
+          />
+          <ActionCard
+            icon={<Calendar className="h-5 w-5" />}
+            title="Daily Ops"
             onClick={() => navigate("/daily-operations")}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-primary" />
-                Daily Ops
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Button className="w-full" size="sm">Open</Button>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:border-primary transition-colors"
+          />
+          <ActionCard
+            icon={<BarChart3 className="h-5 w-5" />}
+            title="Reports"
             onClick={() => navigate("/reports")}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <BarChart3 className="h-4 w-4 text-primary" />
-                Reports
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Button className="w-full" size="sm">Open</Button>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:border-primary transition-colors"
+          />
+          <ActionCard
+            icon={<History className="h-5 w-5" />}
+            title="Bill History"
             onClick={() => navigate("/bill-history")}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <History className="h-4 w-4 text-primary" />
-                Bill History
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Button className="w-full" size="sm">Open</Button>
-            </CardContent>
-          </Card>
+          />
         </div>
       </main>
     </div>
+  );
+}
+
+function ActionCard({ icon, title, onClick }: { icon: React.ReactNode, title: string, onClick: () => void }) {
+  return (
+    <Card className="shadow-sm border-border/50 hover:shadow-md transition-shadow">
+      <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
+        <div className="flex items-center gap-3 text-foreground font-medium">
+          <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-md text-green-700 dark:text-green-400">
+            {icon}
+          </div>
+          <span>{title}</span>
+        </div>
+        <Button
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-medium"
+          onClick={onClick}
+        >
+          Open
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

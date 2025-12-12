@@ -4,13 +4,15 @@ import { apiClient } from '@/api/client';
 export interface User {
   id: string;
   email: string;
+  shopkeeper_name?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  login: (email: string, password: string) => Promise<{ error: Error | null }>;
+  loginWithToken: (token: string, user: User) => void;
   signOut: () => Promise<void>;
 }
 
@@ -40,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const login = async (email: string, password: string) => {
     try {
       const { token, user } = await apiClient.post('/auth/login', { email, password });
       localStorage.setItem('token', token);
@@ -52,6 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithToken = (token: string, user: User) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    setUser(user);
+  };
+
   const signOut = async () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -59,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signUp, login, loginWithToken, signOut }}>
       {children}
     </AuthContext.Provider>
   );
