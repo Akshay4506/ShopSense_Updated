@@ -7,7 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
-import { Store, ArrowLeft, Plus, Trash2, Printer, Loader2 } from "lucide-react";
+import { Store, ArrowLeft, Plus, Trash2, Download, Loader2 } from "lucide-react";
+import html2canvas from "html2canvas";
+import { Receipt } from "@/components/Receipt";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface InventoryItem {
   id: string;
@@ -41,12 +50,22 @@ export default function Billing() {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Ref for the receipt element inside modal
+  const receiptRef = useRef<HTMLDivElement>(null);
+
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGeneratingBill, setIsGeneratingBill] = useState(false);
+
+  // Preview Modal State
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [billPreview, setBillPreview] = useState<any>(null);
+
+  // State to hold bill data for the receipt capture
+  const [billToCapture, setBillToCapture] = useState<any>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -79,43 +98,31 @@ export default function Billing() {
     }
   };
 
-  // Simple client-side parser to replace the Edge Function
   const parseItemInput = (input: string, inventory: InventoryItem[]) => {
-    // Regex for: <quantity><unit?> <itemname> OR <itemname> <quantity><unit?>
-    // e.g., "2kg rice", "rice 2kg", "2 rice"
     const quantityRegex = /(\d+(\.\d+)?)\s*([a-zA-Z]+)?/;
-
-    // Attempt to match quantity at start
     let quantity = 1;
     let unit = "";
     let itemName = input;
 
     const match = input.match(quantityRegex);
     if (match) {
-      // This is a naive implementation. For robust parsing, we'd need more logic.
-      // For now, let's assume if we find a number, that's the quantity.
       const num = parseFloat(match[1]);
       if (!isNaN(num)) {
-        // If number is at start
         if (input.startsWith(match[0])) {
           quantity = num;
           unit = match[3] || "";
           itemName = input.substring(match[0].length).trim();
         }
-        // If number is at end (not implementing complex regex right now, sticking to basics)
-        // Simple fallback: Check if item exists exactly as typed first
       }
     }
 
-    // Direct match check in inventory
     const exactMatch = inventory.find(i => i.item_name.toLowerCase() === input.toLowerCase());
     if (exactMatch) return { item_name: exactMatch.item_name, quantity: 1, unit: exactMatch.unit };
 
-    // Regex match in inventory
     const itemMatch = inventory.find(i => i.item_name.toLowerCase().includes(itemName.toLowerCase()));
 
     return {
-      item_name: itemMatch ? itemMatch.item_name : itemName, // fallback to parsed name
+      item_name: itemMatch ? itemMatch.item_name : itemName,
       quantity: quantity,
       unit: unit || (itemMatch ? itemMatch.unit : "pcs")
     };
@@ -127,10 +134,7 @@ export default function Billing() {
     setIsProcessing(true);
 
     try {
-      // Use local parser instead of Supabase Edge Function
       const data = parseItemInput(inputValue, inventory);
-
-      // Find matching inventory item
       const matchedItem = inventory.find(
         item => item.item_name.toLowerCase() === data.item_name.toLowerCase()
       );
@@ -155,13 +159,11 @@ export default function Billing() {
         return;
       }
 
-      // Check if item already in cart
       const existingIndex = cart.findIndex(
         item => item.inventory_id === matchedItem.id
       );
 
       if (existingIndex >= 0) {
-        // Update quantity
         const newCart = [...cart];
         const newQty = newCart[existingIndex].quantity + data.quantity;
 
@@ -178,7 +180,6 @@ export default function Billing() {
         newCart[existingIndex].quantity = newQty;
         setCart(newCart);
       } else {
-        // Add new item
         if (data.quantity > matchedItem.quantity) {
           toast({
             title: "Insufficient Stock",
@@ -254,81 +255,37 @@ export default function Billing() {
     return cart.reduce((sum, item) => sum + (item.selling_price * item.quantity), 0);
   };
 
-  /*
-  const getTotalCost = () => {
-    return cart.reduce((sum, item) => sum + (item.cost_price * item.quantity), 0);
-  };
-  */
+  const downloadBillImage = async () => {
+    if (!receiptRef.current || !billPreview) return;
 
-  const printBill = (billNumber: number, billDate: Date) => {
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Bill #${billNumber}</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; max-width: 300px; margin: 0 auto; }
-          .header { text-align: center; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-          .shop-name { font-size: 18px; font-weight: bold; }
-          .shop-details { font-size: 11px; color: #444; margin-top: 3px; }
-          .bill-info { font-size: 11px; margin: 10px 0; }
-          table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          th { text-align: left; border-bottom: 1px solid #000; padding: 5px 0; }
-          td { padding: 4px 0; }
-          .qty { width: 40px; }
-          .price { text-align: right; }
-          .total-row { border-top: 1px dashed #000; font-weight: bold; font-size: 14px; }
-          .footer { text-align: center; margin-top: 15px; font-size: 11px; border-top: 1px dashed #000; padding-top: 10px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="shop-name">${profile?.shop_name || "Shop Name"}</div>
-          <div class="shop-details">${profile?.address || ""}</div>
-          <div class="shop-details">Ph: ${profile?.phone_number || ""}</div>
-        </div>
-        
-        <div class="bill-info">
-          <div><strong>Bill #:</strong> ${billNumber}</div>
-          <div><strong>Date:</strong> ${billDate.toLocaleDateString("en-IN")} ${billDate.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</div>
-        </div>
-        
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th class="qty">Qty</th>
-              <th class="price">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${cart.map(item => `
-              <tr>
-                <td>${item.item_name}</td>
-                <td class="qty">${item.quantity} ${item.unit}</td>
-                <td class="price">₹${item.selling_price * item.quantity}</td>
-              </tr>
-            `).join("")}
-            <tr class="total-row">
-              <td colspan="2">TOTAL</td>
-              <td class="price">₹${getTotal()}</td>
-            </tr>
-          </tbody>
-        </table>
-        
-        <div class="footer">
-          Thank you for shopping!<br>
-          Visit again
-        </div>
-      </body>
-      </html>
-    `;
+    try {
+      const canvas = await html2canvas(receiptRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2 // Higher resolution
+      });
 
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.write('<script>window.onload = function() { window.print(); window.close(); }</script>');
-      printWindow.document.close();
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = image;
+      link.download = `Bill-${billPreview.bill_number}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setIsPreviewOpen(false);
+
+      toast({
+        title: "Downloaded",
+        description: "Bill image saved successfully.",
+      });
+
+    } catch (error) {
+      console.error("Image generation failed:", error);
+      toast({
+        title: "Download Failed",
+        description: "Could not generate the bill image.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -338,20 +295,29 @@ export default function Billing() {
     setIsGeneratingBill(true);
 
     try {
-      const billData = {
-        total_amount: getTotal(),
+      const totalAmount = getTotal();
+      const billDataPayload = {
+        total_amount: totalAmount,
         total_cost: cart.reduce((sum, item) => sum + (item.cost_price * item.quantity), 0),
         items: cart
       };
 
-      const result: any = await apiClient.post('/billing', billData);
+      const result: any = await apiClient.post('/billing', billDataPayload);
 
-      // Print the bill
-      printBill(result.bill_number || 0, new Date());
+      // Prepare preview data
+      const previewData = {
+        bill_number: result.bill_number || 0,
+        created_at: new Date(),
+        total_amount: totalAmount,
+        items: [...cart]
+      };
+
+      setBillPreview(previewData);
+      setIsPreviewOpen(true); // Open modal
 
       toast({
         title: "Bill Generated!",
-        description: `Bill #${result.bill_number} - Total: ₹${getTotal()}`,
+        description: `Bill #${result.bill_number} created.`,
       });
 
       // Clear cart and refresh inventory
@@ -503,13 +469,38 @@ export default function Billing() {
               {isGeneratingBill ? (
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
               ) : (
-                <Printer className="h-5 w-5 mr-2" />
+                <Download className="h-5 w-5 mr-2" />
               )}
               Generate Bill
             </Button>
           </CardContent>
         </Card>
       </main>
+
+      {/* Preview Dialog */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle>Bill Preview</DialogTitle>
+          </DialogHeader>
+
+          <div className="border p-2 bg-gray-100 flex justify-center">
+            {/* The Receipt component to be captured */}
+            {billPreview && profile && (
+              <Receipt ref={receiptRef} bill={billPreview} shop={profile} />
+            )}
+          </div>
+
+          <DialogFooter className="flex-col sm:justify-center gap-2">
+            <Button className="w-full" onClick={downloadBillImage}>
+              <Download className="mr-2 h-4 w-4" /> Download Image
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => setIsPreviewOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

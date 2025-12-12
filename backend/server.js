@@ -38,6 +38,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', authenticateToken, profileRoutes);
 app.use('/api/inventory', authenticateToken, inventoryRoutes);
 app.use('/api/billing', authenticateToken, billingRoutes);
+app.use('/api/daily-operations', authenticateToken, dailyOperationsRoutes);
+app.use('/api/reports', authenticateToken, reportsRoutes);
 
 app.get('/', (req, res) => {
     res.send('ShopSense API is running');

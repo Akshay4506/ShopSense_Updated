@@ -61,7 +61,7 @@ router.post('/start', auth, async (req, res) => {
         }
 
         const newSession = await pool.query(
-            'INSERT INTO daily_sessions (user_id, status) VALUES ($1, $2) RETURNING *',
+            'INSERT INTO daily_sessions (user_id, status, start_time) VALUES ($1, $2, NOW()) RETURNING *',
             [req.user.userId, 'active']
         );
         res.json(newSession.rows[0]);

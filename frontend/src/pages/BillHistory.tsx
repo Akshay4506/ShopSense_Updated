@@ -1,11 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Store, ArrowLeft, Printer, Loader2, Receipt } from "lucide-react";
+import { Store, ArrowLeft, Download, Loader2, Receipt as ReceiptIcon } from "lucide-react";
+import html2canvas from "html2canvas";
+import { useToast } from "@/hooks/use-toast";
+import { Receipt } from "@/components/Receipt";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface Bill {
   id: string;
@@ -13,6 +23,7 @@ interface Bill {
   total_amount: number;
   total_cost: number;
   created_at: string;
+  // In a real app, you'd fetch items too. For now we print summary.
 }
 
 interface Profile {
@@ -25,10 +36,18 @@ interface Profile {
 export default function BillHistory() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Ref for capture
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   const [bills, setBills] = useState<Bill[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // State for preview/capture
+  const [billToPreview, setBillToPreview] = useState<Bill | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -51,8 +70,8 @@ export default function BillHistory() {
         apiClient.get('/profile')
       ]);
 
-      setBills(billsData.data || []);
-      setProfile(profileData.data);
+      setBills(billsData || []);
+      setProfile(profileData);
     } catch (error) {
       console.error("Failed to fetch bill history:", error);
     } finally {
@@ -60,67 +79,41 @@ export default function BillHistory() {
     }
   };
 
-  const reprintBill = async (bill: Bill) => {
-    // Note: We need a way to fetch bill items. The current GET /billing might not return items.
-    // Ideally we should have a GET /billing/:id endpoint.
-    // For now, I'll assume we can't easily reprint with full details unless I add that endpoint.
-    // BUT, the original code fetched from 'bill_items'.
-    // I need to update the backend to support this or just print the summary.
-    // Let's print summary for now to avoid breaking the frontend flow, 
-    // or better, I can assume I can't fetch items and just print what I have.
+  const openPreview = (bill: Bill) => {
+    setBillToPreview(bill);
+    setIsPreviewOpen(true);
+  };
 
-    // Actually, I can add a route to fetch bill items later.
-    // For now, I'll just print the basic bill info without items list to avoid errors,
-    // or just show an alert that this feature is maintenance.
+  const downloadBillImage = async () => {
+    if (!receiptRef.current || !billToPreview) return;
 
-    // Better strategy: Just print the header and total.
+    try {
+      const canvas = await html2canvas(receiptRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2 // Higher resolution
+      });
 
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Bill #${bill.bill_number}</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; max-width: 300px; margin: 0 auto; }
-          .header { text-align: center; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-          .shop-name { font-size: 18px; font-weight: bold; }
-          .shop-details { font-size: 11px; color: #444; margin-top: 3px; }
-          .bill-info { font-size: 11px; margin: 10px 0; }
-          .total-row { border-top: 1px dashed #000; font-weight: bold; font-size: 14px; margin-top: 10px; padding-top: 10px; text-align: right; }
-          .footer { text-align: center; margin-top: 15px; font-size: 11px; border-top: 1px dashed #000; padding-top: 10px; }
-          .reprint { text-align: center; font-size: 10px; color: #666; margin-top: 5px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="shop-name">${profile?.shop_name || "Shop Name"}</div>
-          <div class="shop-details">${profile?.address || ""}</div>
-          <div class="shop-details">Ph: ${profile?.phone_number || ""}</div>
-        </div>
-        
-        <div class="bill-info">
-          <div><strong>Bill #:</strong> ${bill.bill_number}</div>
-          <div><strong>Date:</strong> ${new Date(bill.created_at).toLocaleDateString("en-IN")} ${new Date(bill.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</div>
-        </div>
-        
-        <div class="total-row">
-          TOTAL: ₹${bill.total_amount}
-        </div>
-        
-        <div class="footer">
-          Thank you for shopping!<br>
-          Visit again
-        </div>
-        <div class="reprint">*** REPRINT SUMMARY ***</div>
-      </body>
-      </html>
-    `;
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = image;
+      link.download = `Bill-${billToPreview.bill_number}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.write('<script>window.onload = function() { window.print(); window.close(); }</script>');
-      printWindow.document.close();
+      setIsPreviewOpen(false);
+
+      toast({
+        title: "Bill Downloaded",
+        description: `Bill #${billToPreview.bill_number} saved as image.`
+      });
+    } catch (error) {
+      console.error("Image generation failed:", error);
+      toast({
+        title: "Download Failed",
+        description: "Could not generate the bill image.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -170,7 +163,7 @@ export default function BillHistory() {
         {bills.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <ReceiptIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">No bills generated yet.</p>
               <Button className="mt-4" onClick={() => navigate("/billing")}>
                 Start Billing
@@ -198,8 +191,8 @@ export default function BillHistory() {
                             {profit >= 0 ? "+" : ""}₹{profit} profit
                           </p>
                         </div>
-                        <Button variant="outline" size="icon" onClick={() => reprintBill(bill)}>
-                          <Printer className="h-4 w-4" />
+                        <Button variant="outline" size="icon" onClick={() => openPreview(bill)}>
+                          <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -210,6 +203,31 @@ export default function BillHistory() {
           </div>
         )}
       </main>
+
+      {/* Preview Dialog */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle>Bill Preview</DialogTitle>
+          </DialogHeader>
+
+          <div className="border p-2 bg-gray-100 flex justify-center">
+            {/* The Receipt component to be captured */}
+            {billToPreview && profile && (
+              <Receipt ref={receiptRef} bill={billToPreview} shop={profile} />
+            )}
+          </div>
+
+          <DialogFooter className="flex-col sm:justify-center gap-2">
+            <Button className="w-full" onClick={downloadBillImage}>
+              <Download className="mr-2 h-4 w-4" /> Download Image
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => setIsPreviewOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

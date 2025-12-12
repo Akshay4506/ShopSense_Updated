@@ -20,6 +20,7 @@ interface InventoryStats {
   totalValue: number;
   lowStockCount: number;
   outOfStockCount: number;
+  totalSales: number;
 }
 
 export default function Dashboard() {
@@ -31,6 +32,7 @@ export default function Dashboard() {
     totalValue: 0,
     lowStockCount: 0,
     outOfStockCount: 0,
+    totalSales: 0,
   });
 
   useEffect(() => {
@@ -57,17 +59,31 @@ export default function Dashboard() {
 
   const fetchInventoryStats = async () => {
     try {
-      const data: any[] = await apiClient.get('/inventory');
-      if (data) {
-        const totalItems = data.length;
-        const totalValue = data.reduce((sum, item) => sum + (item.selling_price * item.quantity), 0);
-        const lowStockCount = data.filter(item => item.quantity > 0 && item.quantity <= 5).length;
-        const outOfStockCount = data.filter(item => item.quantity === 0).length;
+      const [inventoryData, billsData] = await Promise.all([
+        apiClient.get('/inventory'),
+        apiClient.get('/reports/bills')
+      ]);
 
-        setStats({ totalItems, totalValue, lowStockCount, outOfStockCount });
+      let totalItems = 0;
+      let totalValue = 0;
+      let lowStockCount = 0;
+      let outOfStockCount = 0;
+      let totalSales = 0;
+
+      if (Array.isArray(inventoryData)) {
+        totalItems = inventoryData.length;
+        totalValue = inventoryData.reduce((sum: number, item: any) => sum + (item.selling_price * item.quantity), 0);
+        lowStockCount = inventoryData.filter((item: any) => item.quantity > 0 && item.quantity <= 5).length;
+        outOfStockCount = inventoryData.filter((item: any) => item.quantity === 0).length;
       }
+
+      if (Array.isArray(billsData)) {
+        totalSales = billsData.reduce((sum: number, b: any) => sum + b.total_amount, 0);
+      }
+
+      setStats({ totalItems, totalValue, lowStockCount, outOfStockCount, totalSales });
     } catch (error) {
-      console.error("Failed to fetch inventory stats:", error);
+      console.error("Failed to fetch stats:", error);
     }
   };
 
@@ -110,6 +126,13 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <p className="text-sm text-muted-foreground mb-2">Total Items</p>
               <p className="text-4xl font-semibold text-foreground">{stats.totalItems}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-border/50">
+            <CardContent className="p-6">
+              <p className="text-sm text-muted-foreground mb-2">Total Sales</p>
+              <p className="text-4xl font-semibold text-foreground">₹{stats.totalSales.toLocaleString()}</p>
             </CardContent>
           </Card>
 
