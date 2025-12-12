@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- TODO: Set the document title to the name of your application -->
+  <title>ShopSense</title>
+  <meta name="description" content="Smart Dukaan Management - Track inventory, create bills, and grow your business." />
+  <meta name="author" content="ShopSense Team" />
+
+  <!-- TODO: Update og:title to match your application name -->
+  <meta property="og:title" content="ShopSense" />
+  <meta property="og:description"
+    content="Smart Dukaan Management - Track inventory, create bills, and grow your business." />
+  <meta property="og:type" content="website" />
+</head>
+
+<body>
+  <div id="error-display" style="color: red; padding: 20px; display: none;"></div>
+  <script>
+    window.onerror = function (message, source, lineno, colno, error) {
+      var display = document.getElementById('error-display');
+      display.style.display = 'block';
+      display.innerHTML += '<h3>Error: ' + message + '</h3><p>' + source + ':' + lineno + '</p>';
+    };
+    window.addEventListener('unhandledrejection', function (event) {
+      var display = document.getElementById('error-display');
+      display.style.display = 'block';
+      display.innerHTML += '<h3>Promise Rejection: ' + event.reason + '</h3>';
+    });
+  </script>
+  <div id="root">
+    <h1>Loading ShopSense...</h1>
+  </div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>
