@@ -53,7 +53,6 @@ interface Profile {
   phone_number: string;
 }
 
-// Interface for Top Seller data from backend (if available) or calculated client-side
 interface TopSeller {
   item_name: string;
   quantity: number;
@@ -91,49 +90,49 @@ export default function Reports() {
     setIsLoading(false);
   };
 
+  const fetchProfile = async () => {
+    try {
+      console.log("Fetching profile...");
+      const data = await apiClient.get('/profile');
+      if (data) setProfile(data);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    }
+  };
+
   const fetchBills = async () => {
     try {
-      const data: any = await apiClient.get('/reports/bills');
-      setBills(data || []);
+      console.log("Fetching bills report...");
+      const data = await apiClient.get('/reports/bills');
+      if (Array.isArray(data)) {
+        setBills(data);
+      }
     } catch (error) {
-      console.error("Failed to fetch bills", error);
+      console.error("Failed to fetch bills:", error);
     }
   };
 
   const fetchInventory = async () => {
     try {
-      const data: any = await apiClient.get('/inventory');
-      setInventory(data || []);
+      console.log("Fetching inventory...");
+      const data = await apiClient.get('/inventory');
+      if (Array.isArray(data)) setInventory(data);
     } catch (error) {
-      console.error("Failed to fetch inventory", error);
+      console.error("Failed to fetch inventory:", error);
     }
   };
 
-  const fetchProfile = async () => {
-    try {
-      const data: any = await apiClient.get('/profile');
-      setProfile(data);
-    } catch (error) {
-      console.error("Failed to fetch profile", error);
-    }
-  };
-
-  // Improved fetchTopSellers to handle potential backend response or fallback
   const fetchTopSellers = async () => {
     try {
-      const data: any = await apiClient.get('/reports/top-sellers');
+      console.log("Fetching top sellers...");
+      const data = await apiClient.get('/reports/top-sellers');
       if (Array.isArray(data)) {
         setTopSellers(data);
-      } else {
-        setTopSellers([]);
       }
     } catch (error) {
-      console.error("Failed to fetch top sellers", error);
-      // Fallback: we could calculate from bills if bills included items, 
-      // but currently /reports/bills likely returns just bill summaries as per previous backend code.
-      // So we leave it empty if backend fails, or assume backend handles aggregation.
+      console.error("Failed to fetch top sellers:", error);
     }
-  }
+  };
 
   // Calculate statistics
   const getStats = () => {
@@ -144,17 +143,17 @@ export default function Reports() {
 
     const todaySales = bills
       .filter(b => new Date(b.created_at).toDateString() === today)
-      .reduce((sum, b) => sum + b.total_amount, 0);
+      .reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
 
     const weekSales = bills
       .filter(b => new Date(b.created_at) >= weekAgo)
-      .reduce((sum, b) => sum + b.total_amount, 0);
+      .reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
 
     const monthSales = bills
       .filter(b => new Date(b.created_at) >= monthAgo)
-      .reduce((sum, b) => sum + b.total_amount, 0);
+      .reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
 
-    const totalProfit = bills.reduce((sum, b) => sum + (b.total_amount - b.total_cost), 0);
+    const totalProfit = bills.reduce((sum, b) => sum + ((Number(b.total_amount) || 0) - (Number(b.total_cost) || 0)), 0);
 
     return { todaySales, weekSales, monthSales, totalProfit };
   };
@@ -171,8 +170,8 @@ export default function Reports() {
 
       last7Days.push({
         date: date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric" }),
-        sales: dayBills.reduce((sum, b) => sum + b.total_amount, 0),
-        profit: dayBills.reduce((sum, b) => sum + (b.total_amount - b.total_cost), 0),
+        sales: dayBills.reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0),
+        profit: dayBills.reduce((sum, b) => sum + ((Number(b.total_amount) || 0) - (Number(b.total_cost) || 0)), 0),
       });
     }
 
@@ -193,8 +192,8 @@ export default function Reports() {
 
     const monthlyData = Array.from({ length: 12 }, (_, i) => {
       const monthBills = yearBills.filter(b => new Date(b.created_at).getMonth() === i);
-      const totalSales = monthBills.reduce((sum, b) => sum + b.total_amount, 0);
-      const totalCost = monthBills.reduce((sum, b) => sum + b.total_cost, 0);
+      const totalSales = monthBills.reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
+      const totalCost = monthBills.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0);
 
       return {
         month: new Date(year, i).toLocaleDateString("en-IN", { month: "short" }),

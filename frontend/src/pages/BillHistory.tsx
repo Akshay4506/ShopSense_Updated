@@ -79,9 +79,24 @@ export default function BillHistory() {
     }
   };
 
-  const openPreview = (bill: Bill) => {
-    setBillToPreview(bill);
-    setIsPreviewOpen(true);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  const openPreview = async (billSummary: Bill) => {
+    setIsPreviewLoading(true);
+    try {
+      const fullBill: any = await apiClient.get(`/billing/${billSummary.id}`);
+      setBillToPreview(fullBill);
+      setIsPreviewOpen(true);
+    } catch (error) {
+      console.error("Failed to fetch bill details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load bill details.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsPreviewLoading(false);
+    }
   };
 
   const downloadBillImage = async () => {
@@ -191,8 +206,12 @@ export default function BillHistory() {
                             {profit >= 0 ? "+" : ""}₹{profit} profit
                           </p>
                         </div>
-                        <Button variant="outline" size="icon" onClick={() => openPreview(bill)}>
-                          <Download className="h-4 w-4" />
+                        <Button variant="outline" size="icon" onClick={() => openPreview(bill)} disabled={isPreviewLoading}>
+                          {isPreviewLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </div>

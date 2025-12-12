@@ -247,4 +247,30 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
+// Update Password (Authenticated)
+router.put('/update-password', require('../middleware/auth'), async (req, res) => {
+    const { password } = req.body;
+    const userId = req.user.id; // From auth middleware
+
+    try {
+        if (!password || password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        await db.query(
+            'UPDATE users SET password_hash = $1 WHERE id = $2',
+            [hashedPassword, userId]
+        );
+
+        res.json({ message: 'Password updated successfully' });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 module.exports = router;

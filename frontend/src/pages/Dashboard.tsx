@@ -59,10 +59,14 @@ export default function Dashboard() {
 
   const fetchInventoryStats = async () => {
     try {
+      console.log("Fetching stats...");
       const [inventoryData, billsData] = await Promise.all([
         apiClient.get('/inventory'),
         apiClient.get('/reports/bills')
       ]);
+
+      console.log("Inventory Data:", inventoryData);
+      console.log("Bills Data:", billsData);
 
       let totalItems = 0;
       let totalValue = 0;
@@ -78,7 +82,10 @@ export default function Dashboard() {
       }
 
       if (Array.isArray(billsData)) {
-        totalSales = billsData.reduce((sum: number, b: any) => sum + b.total_amount, 0);
+        totalSales = billsData.reduce((sum: number, b: any) => sum + Number(b.total_amount), 0);
+        console.log("Calculated Total Sales:", totalSales);
+      } else {
+        console.error("Bills data is not an array:", billsData);
       }
 
       setStats({ totalItems, totalValue, lowStockCount, outOfStockCount, totalSales });
@@ -96,70 +103,69 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-background border-b border-border">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2 text-green-700">
-            <Store className="h-6 w-6" />
-            <span className="text-xl font-bold text-foreground">ShopSense</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <UserProfile initialProfile={profile} onProfileUpdate={fetchProfile} />
-          </div>
+      <header className="border-b bg-card text-card-foreground py-4 px-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Store className="h-7 w-7 text-primary" />
+          <h1 className="text-2xl font-bold">Shop Dashboard</h1>
+        </div>
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <UserProfile initialProfile={profile} onProfileUpdate={fetchProfile} />
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      {/* Main Content */}
+      <main className="flex-1 p-6 container mx-auto">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-1">
-            Welcome, {profile?.shopkeeper_name || "Shopkeeper"}!
-          </h1>
+        <section className="mb-8">
+          <h2 className="text-3xl font-semibold mb-1">Welcome, {profile?.shopkeeper_name || "Shopkeeper"}!</h2>
           <p className="text-muted-foreground text-lg">{profile?.shop_name || "Loading..."}</p>
-        </div>
+        </section>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="shadow-sm border-border/50">
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground mb-2">Total Items</p>
-              <p className="text-4xl font-semibold text-foreground">{stats.totalItems}</p>
-            </CardContent>
-          </Card>
+        {/* Inventory Stats */}
+        <section className="mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <Card className="shadow-sm border-border/50">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground mb-1">Total Items</p>
+                <p className="text-2xl font-semibold text-foreground">{stats.totalItems}</p>
+              </CardContent>
+            </Card>
 
-          <Card className="shadow-sm border-border/50">
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground mb-2">Total Sales</p>
-              <p className="text-4xl font-semibold text-foreground">₹{stats.totalSales.toLocaleString()}</p>
-            </CardContent>
-          </Card>
+            <Card className="shadow-sm border-border/50">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground mb-1">Total Sales</p>
+                <p className="text-2xl font-semibold text-foreground">₹{stats.totalSales.toLocaleString()}</p>
+              </CardContent>
+            </Card>
 
-          <Card className="shadow-sm border-border/50">
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground mb-2">Inventory Value</p>
-              <p className="text-4xl font-semibold text-foreground">₹{stats.totalValue.toLocaleString()}</p>
-            </CardContent>
-          </Card>
+            <Card className="shadow-sm border-border/50">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground mb-1">Inventory Value</p>
+                <p className="text-2xl font-semibold text-foreground">₹{stats.totalValue.toLocaleString()}</p>
+              </CardContent>
+            </Card>
 
-          <Card className="shadow-sm border-border/50">
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground mb-2">Low Stock</p>
-              <p className="text-4xl font-semibold text-foreground">{stats.lowStockCount}</p>
-            </CardContent>
-          </Card>
+            <Card className="shadow-sm border-border/50">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground mb-1">Low Stock</p>
+                <p className="text-2xl font-semibold text-foreground">{stats.lowStockCount}</p>
+              </CardContent>
+            </Card>
 
-          <Card className="shadow-sm border-border/50">
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground mb-2">Out of Stock</p>
-              <p className="text-4xl font-semibold text-foreground">{stats.outOfStockCount}</p>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="shadow-sm border-border/50">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground mb-1">Out of Stock</p>
+                <p className="text-2xl font-semibold text-foreground">{stats.outOfStockCount}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
 
         {/* Actions Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <ActionCard
             icon={<Package className="h-5 w-5" />}
             title="Inventory"
@@ -169,11 +175,6 @@ export default function Dashboard() {
             icon={<Receipt className="h-5 w-5" />}
             title="Billing"
             onClick={() => navigate("/billing")}
-          />
-          <ActionCard
-            icon={<Calendar className="h-5 w-5" />}
-            title="Daily Ops"
-            onClick={() => navigate("/daily-operations")}
           />
           <ActionCard
             icon={<BarChart3 className="h-5 w-5" />}
@@ -193,7 +194,7 @@ export default function Dashboard() {
 
 function ActionCard({ icon, title, onClick }: { icon: React.ReactNode, title: string, onClick: () => void }) {
   return (
-    <Card className="shadow-sm border-border/50 hover:shadow-md transition-shadow">
+    <Card className="shadow-sm border-border/50 hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
       <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
         <div className="flex items-center gap-3 text-foreground font-medium">
           <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-md text-green-700 dark:text-green-400">
@@ -203,7 +204,10 @@ function ActionCard({ icon, title, onClick }: { icon: React.ReactNode, title: st
         </div>
         <Button
           className="w-full bg-green-600 hover:bg-green-700 text-white font-medium"
-          onClick={onClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick();
+          }}
         >
           Open
         </Button>

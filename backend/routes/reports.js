@@ -8,7 +8,7 @@ router.get('/bills', auth, async (req, res) => {
     try {
         const result = await pool.query(
             'SELECT id, total_amount, total_cost, created_at FROM bills WHERE user_id = $1 ORDER BY created_at DESC',
-            [req.user.userId]
+            [req.user.id] // Fixed: user.id instead of user.userId
         );
 
         // For top sellers, we might need bill items. 
@@ -33,7 +33,7 @@ router.get('/top-sellers', auth, async (req, res) => {
       GROUP BY bi.item_name
       ORDER BY revenue DESC
       LIMIT 5
-    `, [req.user.userId]);
+    `, [req.user.id]); // Fixed: user.id instead of user.userId
 
         res.json(result.rows);
     } catch (err) {

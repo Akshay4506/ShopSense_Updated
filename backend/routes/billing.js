@@ -51,7 +51,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Get Bill History
 router.get('/', async (req, res) => {
     const userId = req.user.id;
     try {
@@ -61,6 +60,37 @@ router.get('/', async (req, res) => {
             [userId]
         );
         res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Get Bill Details (with items)
+router.get('/:id', async (req, res) => {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    try {
+        const billResult = await db.query(
+            'SELECT * FROM bills WHERE id = $1 AND user_id = $2',
+            [id, userId]
+        );
+
+        if (billResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Bill not found' });
+        }
+
+        const bill = billResult.rows[0];
+
+        const itemsResult = await db.query(
+            'SELECT * FROM bill_items WHERE bill_id = $1',
+            [id]
+        );
+
+        bill.items = itemsResult.rows;
+        res.json(bill);
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
