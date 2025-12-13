@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/api/client';
@@ -61,13 +61,6 @@ interface Profile {
   phone_number: string;
 }
 
-interface Bill {
-  bill_number: number;
-  created_at: Date | string;
-  total_amount: number;
-  items: CartItem[];
-}
-
 export default function Billing() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -86,246 +79,256 @@ export default function Billing() {
 
   // Preview Modal State
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [billPreview, setBillPreview] = useState<Bill | null>(null);
+  const [billPreview, setBillPreview] = useState<any>(null);
 
   // State to hold bill data for the receipt capture
-  const [billToCapture, _setBillToCapture] = useState<Bill | null>(null);
+  const [billToCapture, setBillToCapture] = useState<any>(null);
 
   // 1. Helper Functions
-  const parseItemInput = useCallback(
-    (input: string, inventoryList: InventoryItem[]) => {
-      let normalizedInput = input.trim();
+  const parseItemInput = (input: string, inventory: InventoryItem[]) => {
+    // Normalize input: remove special chars (except dots for decimals) and convert words to numbers
+    // This helps with "One kg sugar" -> "1 kg sugar"
+    let normalizedInput = input.trim();
 
-      // Map common number words to digits (English & Telugu)
-      const numberMap: { [key: string]: string } = {
-        one: '1',
-        two: '2',
-        three: '3',
-        four: '4',
-        five: '5',
-        six: '6',
-        seven: '7',
-        eight: '8',
-        nine: '9',
-        ten: '10',
-        a: '1',
-        an: '1',
-        // Telugu numbers
-        ఒక: '1',
-        రెండు: '2',
-        మూడు: '3',
-        నాలుగు: '4',
-        ఐదు: '5',
-        ఆరు: '6',
-        ఏడు: '7',
-        ఎనిమిది: '8',
-        తొమ్మిది: '9',
-        పది: '10',
-        okati: '1',
-        oka: '1',
-      };
+    // Map common number words to digits
+    // Map common number words to digits (English & Telugu)
+    const numberMap: { [key: string]: string } = {
+      one: '1',
+      two: '2',
+      three: '3',
+      four: '4',
+      five: '5',
+      six: '6',
+      seven: '7',
+      eight: '8',
+      nine: '9',
+      ten: '10',
+      a: '1',
+      an: '1',
+      // Telugu numbers
+      ఒక: '1',
+      రెండు: '2',
+      మూడు: '3',
+      నాలుగు: '4',
+      ఐదు: '5',
+      ఆరు: '6',
+      ఏడు: '7',
+      ఎనిమిది: '8',
+      తొమ్మిది: '9',
+      పది: '10',
+      okati: '1',
+      oka: '1',
+    };
 
-      const firstWord = normalizedInput.split(' ')[0].toLowerCase();
-      if (numberMap[firstWord]) {
-        normalizedInput = normalizedInput.replace(
-          new RegExp(`^${firstWord}`, 'i'),
-          numberMap[firstWord],
-        );
-      }
+    // Replace number words at the start of string
+    // e.g. "One kg" -> "1 kg", "ఒక కిలో" -> "1 కిలో"
+    const firstWord = normalizedInput.split(' ')[0].toLowerCase();
+    if (numberMap[firstWord]) {
+      normalizedInput = normalizedInput.replace(
+        new RegExp(`^${firstWord}`, 'i'),
+        numberMap[firstWord],
+      );
+    }
 
-      const quantityRegex = /(\d+(\.\d+)?)\s*([^\s\d]+)?/;
-      let quantity = 1;
-      let unit = '';
-      let itemName = normalizedInput;
+    // Regex updated to allow non-English letters in unit (e.g. కిలో)
+    // (\d+(\.\d+)?) -> Captures number (1.5)
+    // \s* -> Spaces
+    // ([^\s\d]+)? -> Captures unit (anything not space or digit, e.g. kg, lbs, కిలో)
+    const quantityRegex = /(\d+(\.\d+)?)\s*([^\s\d]+)?/;
+    let quantity = 1;
+    let unit = '';
+    let itemName = normalizedInput;
 
-      const match = normalizedInput.match(quantityRegex);
-      if (match) {
-        const num = parseFloat(match[1]);
-        if (!isNaN(num)) {
-          if (normalizedInput.startsWith(match[0])) {
-            quantity = num;
-            unit = match[3] || '';
-            itemName = normalizedInput.substring(match[0].length).trim();
-          }
+    const match = normalizedInput.match(quantityRegex);
+    if (match) {
+      const num = parseFloat(match[1]);
+      if (!isNaN(num)) {
+        if (normalizedInput.startsWith(match[0])) {
+          quantity = num;
+          unit = match[3] || '';
+          itemName = normalizedInput.substring(match[0].length).trim();
         }
       }
+    }
 
-      itemName = itemName.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '').trim();
+    // Clean up punctuation from itemName
+    itemName = itemName.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '').trim();
 
-      const translationMap: { [key: string]: string } = {
-        బియ్యం: 'rice',
-        biyyam: 'rice',
-        పప్పు: 'dal',
-        pappu: 'dal',
-        పాలు: 'milk',
-        paalu: 'milk',
-        పంచదార: 'sugar',
-        panchadara: 'sugar',
-        చెక్కర: 'sugar',
-        chekkara: 'sugar',
-        టమాటా: 'tomato',
-        tamata: 'tomato',
-        ఉల్లిపాయ: 'onion',
-        ullipaya: 'onion',
-        బంగాళాదుంప: 'potato',
-        bangaladumpa: 'potato',
-        నూనె: 'oil',
-        nune: 'oil',
-        ఉప్పు: 'salt',
-        uppu: 'salt',
-      };
+    // Translation Map (Telugu -> English)
+    const translationMap: { [key: string]: string } = {
+      బియ్యం: 'rice',
+      biyyam: 'rice',
+      పప్పు: 'dal',
+      pappu: 'dal',
+      పాలు: 'milk',
+      paalu: 'milk',
+      పంచదార: 'sugar',
+      panchadara: 'sugar',
+      చెక్కర: 'sugar',
+      chekkara: 'sugar',
+      టమాటా: 'tomato',
+      tamata: 'tomato',
+      ఉల్లిపాయ: 'onion',
+      ullipaya: 'onion',
+      బంగాళాదుంప: 'potato',
+      bangaladumpa: 'potato',
+      నూనె: 'oil',
+      nune: 'oil',
+      ఉప్పు: 'salt',
+      uppu: 'salt',
+    };
 
-      if (translationMap[itemName.toLowerCase()]) {
-        itemName = translationMap[itemName.toLowerCase()];
-      } else {
-        Object.keys(translationMap).forEach((key) => {
-          if (itemName.toLowerCase().includes(key)) {
-            itemName = itemName.toLowerCase().replace(key, translationMap[key]);
-          }
-        });
-      }
+    // Auto-translate if applicable
+    // Check exact match first
+    if (translationMap[itemName.toLowerCase()]) {
+      itemName = translationMap[itemName.toLowerCase()];
+    } else {
+      // Check partial match (e.g. "sona masoori biyyam" -> contains biyyam)
+      // Simple heuristic: if the phrase contains a known key, replace it or assume that's the item.
+      // For accurate matching, let's substitute known words.
+      Object.keys(translationMap).forEach((key) => {
+        if (itemName.toLowerCase().includes(key)) {
+          itemName = itemName.toLowerCase().replace(key, translationMap[key]);
+        }
+      });
+    }
 
-      const exactMatch = inventoryList.find(
-        (i) => i.item_name.toLowerCase() === itemName.toLowerCase(),
-      );
-      if (exactMatch)
-        return {
-          item_name: exactMatch.item_name,
-          quantity: 1,
-          unit: exactMatch.unit,
-        };
-
-      const itemMatch = inventoryList.find((i) =>
-        i.item_name.toLowerCase().includes(itemName.toLowerCase()),
-      );
-
+    const exactMatch = inventory.find(
+      (i) =>
+        i.item_name.toLowerCase() ===
+        input
+          .toLowerCase()
+          .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')
+          .trim(),
+    );
+    if (exactMatch)
       return {
-        item_name: itemMatch ? itemMatch.item_name : itemName,
-        quantity: quantity,
-        unit: unit || (itemMatch ? itemMatch.unit : 'pcs'),
+        item_name: exactMatch.item_name,
+        quantity: 1,
+        unit: exactMatch.unit,
       };
-    },
-    [],
-  );
 
-  const processAddItem = useCallback(
-    async (inputSafe: string): Promise<boolean> => {
-      if (!inputSafe) return false;
-      setIsProcessing(true);
+    const itemMatch = inventory.find((i) =>
+      i.item_name.toLowerCase().includes(itemName.toLowerCase()),
+    );
 
-      try {
-        const data = parseItemInput(inputSafe, inventory);
-        const matchedItem = inventory.find(
-          (item) =>
-            item.item_name.toLowerCase() === data.item_name.toLowerCase(),
-        );
+    return {
+      item_name: itemMatch ? itemMatch.item_name : itemName,
+      quantity: quantity,
+      unit: unit || (itemMatch ? itemMatch.unit : 'pcs'),
+    };
+  };
 
-        if (!matchedItem) {
-          toast({
-            title: 'Item not found',
-            description: `"${data.item_name}" is not in your inventory.`,
-            variant: 'destructive',
-          });
-          setIsProcessing(false);
-          return false;
-        }
+  const processAddItem = async (inputSafe: string): Promise<boolean> => {
+    if (!inputSafe) return false;
+    setIsProcessing(true);
 
-        if (matchedItem.quantity === 0) {
-          toast({
-            title: 'Out of Stock',
-            description: `${matchedItem.item_name} is out of stock.`,
-            variant: 'destructive',
-          });
-          setIsProcessing(false);
-          return false;
-        }
+    try {
+      const data = parseItemInput(inputSafe, inventory);
+      const matchedItem = inventory.find(
+        (item) => item.item_name.toLowerCase() === data.item_name.toLowerCase(),
+      );
 
-        const existingIndex = cart.findIndex(
-          (item) => item.inventory_id === matchedItem.id,
-        );
-
-        if (existingIndex >= 0) {
-          const newCart = [...cart];
-          const newQty = newCart[existingIndex].quantity + data.quantity;
-
-          if (newQty > matchedItem.quantity) {
-            toast({
-              title: 'Insufficient Stock',
-              description: `Only ${matchedItem.quantity} ${matchedItem.unit} available.`,
-              variant: 'destructive',
-            });
-            setIsProcessing(false);
-            return false;
-          }
-
-          newCart[existingIndex].quantity = newQty;
-          setCart(newCart);
-        } else {
-          if (data.quantity > matchedItem.quantity) {
-            toast({
-              title: 'Insufficient Stock',
-              description: `Only ${matchedItem.quantity} ${matchedItem.unit} available.`,
-              variant: 'destructive',
-            });
-            setIsProcessing(false);
-            return false;
-          }
-
-          setCart((prev) => [
-            ...prev,
-            {
-              inventory_id: matchedItem.id,
-              item_name: matchedItem.item_name,
-              quantity: data.quantity,
-              unit: matchedItem.unit,
-              cost_price: matchedItem.cost_price,
-              selling_price: matchedItem.selling_price,
-              available_stock: matchedItem.quantity,
-            },
-          ]);
-        }
-
+      if (!matchedItem) {
         toast({
-          title: 'Added to cart',
-          description: `${data.quantity} ${matchedItem.unit} ${matchedItem.item_name}`,
-        });
-
-        return true;
-      } catch (error) {
-        console.error('Error parsing item:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to process item.',
+          title: 'Item not found',
+          description: `"${data.item_name}" is not in your inventory.`,
           variant: 'destructive',
         });
-        return false;
-      } finally {
         setIsProcessing(false);
+        return false;
       }
-    },
-    [inventory, cart, toast, parseItemInput],
-  );
 
-  // 2. Voice Handling (Calls Helper)
-  // 2. Voice Handling (Calls Helper)
-  const handleVoiceData = useCallback(
-    async (transcript: string) => {
-      // Determine input by removing trailing dot if present (common in voice)
-      const cleanTranscript = transcript.replace(/\.$/, '');
+      if (matchedItem.quantity === 0) {
+        toast({
+          title: 'Out of Stock',
+          description: `${matchedItem.item_name} is out of stock.`,
+          variant: 'destructive',
+        });
+        setIsProcessing(false);
+        return false;
+      }
 
-      setInputValue(cleanTranscript);
+      const existingIndex = cart.findIndex(
+        (item) => item.inventory_id === matchedItem.id,
+      );
+
+      if (existingIndex >= 0) {
+        const newCart = [...cart];
+        const newQty = newCart[existingIndex].quantity + data.quantity;
+
+        if (newQty > matchedItem.quantity) {
+          toast({
+            title: 'Insufficient Stock',
+            description: `Only ${matchedItem.quantity} ${matchedItem.unit} available.`,
+            variant: 'destructive',
+          });
+          setIsProcessing(false);
+          return false;
+        }
+
+        newCart[existingIndex].quantity = newQty;
+        setCart(newCart);
+      } else {
+        if (data.quantity > matchedItem.quantity) {
+          toast({
+            title: 'Insufficient Stock',
+            description: `Only ${matchedItem.quantity} ${matchedItem.unit} available.`,
+            variant: 'destructive',
+          });
+          setIsProcessing(false);
+          return false;
+        }
+
+        setCart((prev) => [
+          ...prev,
+          {
+            inventory_id: matchedItem.id,
+            item_name: matchedItem.item_name,
+            quantity: data.quantity,
+            unit: matchedItem.unit,
+            cost_price: matchedItem.cost_price,
+            selling_price: matchedItem.selling_price,
+            available_stock: matchedItem.quantity,
+          },
+        ]);
+      }
+
       toast({
-        title: 'Heard:',
-        description: cleanTranscript,
+        title: 'Added to cart',
+        description: `${data.quantity} ${matchedItem.unit} ${matchedItem.item_name}`,
       });
-      const success = await processAddItem(cleanTranscript);
-      if (success) {
-        // Clear input after short delay to show what was recognized
-        setTimeout(() => setInputValue(''), 1000);
-      }
-    },
-    [processAddItem, toast],
-  );
+
+      return true;
+    } catch (error) {
+      console.error('Error parsing item:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to process item.',
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // 2. Voice Handling (Calls Helper)
+  const handleVoiceData = async (transcript: string) => {
+    // Determine input by removing trailing dot if present (common in voice)
+    const cleanTranscript = transcript.replace(/\.$/, '');
+
+    setInputValue(cleanTranscript);
+    toast({
+      title: 'Heard:',
+      description: cleanTranscript,
+    });
+    const success = await processAddItem(cleanTranscript);
+    if (success) {
+      // Clear input after short delay to show what was recognized
+      setTimeout(() => setInputValue(''), 1000);
+    }
+  };
 
   const [language, setLanguage] = useState('en-IN');
 
@@ -347,25 +350,6 @@ export default function Billing() {
   };
 
   // 4. Effects
-  /* 4. Effects & Data Fetching (Hoisted) */
-  const fetchInventory = useCallback(async () => {
-    try {
-      const data = (await apiClient.get('/inventory')) as InventoryItem[];
-      setInventory(data || []);
-    } catch (error) {
-      console.error('Failed to fetch inventory', error);
-    }
-  }, []);
-
-  const fetchProfile = useCallback(async () => {
-    try {
-      const data = (await apiClient.get('/profile')) as Profile;
-      setProfile(data);
-    } catch (error) {
-      console.error('Failed to fetch profile', error);
-    }
-  }, []);
-
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
@@ -377,7 +361,25 @@ export default function Billing() {
       fetchInventory();
       fetchProfile();
     }
-  }, [user, fetchInventory, fetchProfile]);
+  }, [user]);
+
+  const fetchInventory = async () => {
+    try {
+      const data: any = await apiClient.get('/inventory');
+      setInventory(data || []);
+    } catch (error) {
+      console.error('Failed to fetch inventory', error);
+    }
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const data: any = await apiClient.get('/profile');
+      setProfile(data);
+    } catch (error) {
+      console.error('Failed to fetch profile', error);
+    }
+  };
 
   // 5. Event Handlers
   const handleAddItem = async () => {
@@ -474,12 +476,10 @@ export default function Billing() {
         items: cart,
       };
 
-      const result = (await apiClient.post('/billing', billDataPayload)) as {
-        bill_number: number;
-      };
+      const result: any = await apiClient.post('/billing', billDataPayload);
 
       // Prepare preview data
-      const previewData: Bill = {
+      const previewData = {
         bill_number: result.bill_number || 0,
         created_at: new Date(),
         total_amount: totalAmount,
@@ -497,12 +497,11 @@ export default function Billing() {
       // Clear cart and refresh inventory
       setCart([]);
       fetchInventory();
-    } catch (error) {
-      const err = error as Error;
-      console.error('Error generating bill:', err);
+    } catch (error: any) {
+      console.error('Error generating bill:', error);
       toast({
         title: 'Error',
-        description: err.message || 'Failed to generate bill.',
+        description: error.message || 'Failed to generate bill.',
         variant: 'destructive',
       });
     }

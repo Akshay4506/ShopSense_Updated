@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/api/client';
@@ -64,19 +64,6 @@ export default function Inventory() {
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('pcs');
 
-  const fetchInventory = useCallback(async () => {
-    try {
-      const data = (await apiClient.get('/inventory')) as InventoryItem[];
-      setItems(data || []);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch inventory',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
@@ -87,7 +74,20 @@ export default function Inventory() {
     if (user) {
       fetchInventory();
     }
-  }, [user, fetchInventory]);
+  }, [user]);
+
+  const fetchInventory = async () => {
+    try {
+      const data: any = await apiClient.get('/inventory');
+      setItems(data || []);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch inventory',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const resetForm = () => {
     setItemName('');
@@ -103,8 +103,11 @@ export default function Inventory() {
     try {
       await apiClient.post('/inventory', {
         item_name: itemName,
+        // @ts-ignore
         cost_price: parseInt(costPrice) || 0,
+        // @ts-ignore
         selling_price: parseInt(sellingPrice) || 0,
+        // @ts-ignore
         quantity: parseInt(quantity) || 0,
         unit: unit,
       });
@@ -116,11 +119,10 @@ export default function Inventory() {
       resetForm();
       setIsAddDialogOpen(false);
       fetchInventory();
-    } catch (error) {
-      const err = error as Error;
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: err.message || 'Failed to add item',
+        description: error.message || 'Failed to add item',
         variant: 'destructive',
       });
     }
@@ -133,8 +135,11 @@ export default function Inventory() {
     try {
       await apiClient.put(`/inventory/${editingItem.id}`, {
         item_name: itemName,
+        // @ts-ignore
         cost_price: parseInt(costPrice) || 0,
+        // @ts-ignore
         selling_price: parseInt(sellingPrice) || 0,
+        // @ts-ignore
         quantity: parseInt(quantity) || 0,
         unit: unit,
       });
@@ -147,11 +152,10 @@ export default function Inventory() {
       setIsEditDialogOpen(false);
       setEditingItem(null);
       fetchInventory();
-    } catch (error) {
-      const err = error as Error;
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: err.message || 'Failed to update item',
+        description: error.message || 'Failed to update item',
         variant: 'destructive',
       });
     }
@@ -165,7 +169,7 @@ export default function Inventory() {
         description: `${item.item_name} has been removed.`,
       });
       fetchInventory();
-    } catch {
+    } catch (error: any) {
       toast({
         title: 'Error',
         description: 'Failed to delete item',

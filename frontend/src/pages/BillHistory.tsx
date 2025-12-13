@@ -90,7 +90,7 @@ export default function BillHistory() {
   const openPreview = async (billSummary: Bill) => {
     setIsPreviewLoading(true);
     try {
-      const fullBill = await apiClient.get(`/billing/${billSummary.id}`) as Bill;
+      const fullBill: any = await apiClient.get(`/billing/${billSummary.id}`);
       setBillToPreview(fullBill);
       setIsPreviewOpen(true);
     } catch (error) {

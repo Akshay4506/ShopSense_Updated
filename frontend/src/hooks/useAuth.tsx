@@ -43,8 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await apiClient.post('/auth/register', { email, password });
       return { error: null };
-    } catch (error) {
-      return { error: error as Error };
+    } catch (error: any) {
+      return { error };
     }
   };
 
@@ -58,8 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       return { error: null };
-    } catch (error) {
-      return { error: error as Error };
+    } catch (error: any) {
+      return { error };
     }
   };
 

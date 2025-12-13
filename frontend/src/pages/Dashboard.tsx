@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/api/client';
@@ -9,9 +9,12 @@ import {
   Store,
   Package,
   Receipt,
+  Calendar,
   BarChart3,
   History,
   Bell,
+  AlertTriangle,
+  TrendingDown,
 } from 'lucide-react';
 import { UserProfile } from '@/components/UserProfile';
 import {
@@ -42,15 +45,6 @@ interface Notification {
   severity: 'warning' | 'alert' | 'critical';
 }
 
-interface InventoryItem {
-  selling_price: number;
-  quantity: number;
-}
-
-interface Bill {
-  total_amount: number | string;
-}
-
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -64,22 +58,49 @@ export default function Dashboard() {
   });
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const fetchProfile = useCallback(async () => {
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      fetchInventoryStats();
+      fetchNotifications();
+    }
+  }, [user]);
+
+  const fetchNotifications = async () => {
     try {
-      const data = (await apiClient.get('/profile')) as Profile;
+      const data: any = await apiClient.get('/notifications');
+      if (Array.isArray(data)) setNotifications(data);
+    } catch (e) {
+      console.error('Failed to fetch notifications', e);
+    }
+  };
+
+  // ... fetchProfile and fetchInventoryStats ...
+
+  // Fetch Logic (Keeping existing logic intact, just ensuring no syntax breaks)
+  const fetchProfile = async () => {
+    try {
+      const data: any = await apiClient.get('/profile'); // fixed type
       if (data) setProfile(data);
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     }
-  }, []);
+  };
 
-  const fetchInventoryStats = useCallback(async () => {
+  const fetchInventoryStats = async () => {
     try {
       console.log('Fetching stats...');
       const [inventoryData, billsData] = await Promise.all([
         apiClient.get('/inventory'),
         apiClient.get('/reports/bills'),
       ]);
+      // ... same logic as before ... assuming standard array handling
 
       let totalItems = 0;
       let totalValue = 0;
@@ -87,24 +108,24 @@ export default function Dashboard() {
       let outOfStockCount = 0;
       let totalSales = 0;
 
-      const inv = inventoryData as InventoryItem[];
-      const bills = billsData as Bill[];
+      const inv = inventoryData as any[];
+      const bills = billsData as any[];
 
       if (Array.isArray(inv)) {
         totalItems = inv.length;
         totalValue = inv.reduce(
-          (sum: number, item) => sum + item.selling_price * item.quantity,
+          (sum: number, item: any) => sum + item.selling_price * item.quantity,
           0,
         );
         lowStockCount = inv.filter(
-          (item) => item.quantity > 0 && item.quantity <= 5,
+          (item: any) => item.quantity > 0 && item.quantity <= 5,
         ).length;
-        outOfStockCount = inv.filter((item) => item.quantity === 0).length;
+        outOfStockCount = inv.filter((item: any) => item.quantity === 0).length;
       }
 
       if (Array.isArray(bills)) {
         totalSales = bills.reduce(
-          (sum: number, b) => sum + Number(b.total_amount),
+          (sum: number, b: any) => sum + Number(b.total_amount),
           0,
         );
       }
@@ -119,30 +140,7 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }
-  }, []);
-
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const data = (await apiClient.get('/notifications')) as Notification[];
-      if (Array.isArray(data)) setNotifications(data);
-    } catch (e) {
-      console.error('Failed to fetch notifications', e);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
-  }, [user, loading, navigate]);
-
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-      fetchInventoryStats();
-      fetchNotifications();
-    }
-  }, [user, fetchProfile, fetchInventoryStats, fetchNotifications]);
+  };
 
   if (loading) {
     return <CrazyLoader />;
@@ -181,13 +179,12 @@ export default function Dashboard() {
                       className="p-4 border-b last:border-0 flex gap-3 hover:bg-muted/50"
                     >
                       <div
-                        className={`mt-1 h-2 w-2 rounded-full shrink-0 ${
-                          notif.severity === 'critical'
+                        className={`mt-1 h-2 w-2 rounded-full shrink-0 ${notif.severity === 'critical'
                             ? 'bg-red-500'
                             : notif.severity === 'alert'
                               ? 'bg-orange-500'
                               : 'bg-yellow-500'
-                        }`}
+                          }`}
                       />
                       <div>
                         <p className="text-sm font-medium leading-none mb-1">

@@ -23,18 +23,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, LogOut, Lock, Store, ChevronDown } from 'lucide-react';
+import { User, Settings, LogOut, Lock, Store, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-interface Profile {
-  shopkeeper_name: string;
-  shop_name: string;
-  address: string;
-  phone_number: string;
-}
-
 interface UserProfileProps {
-  initialProfile?: Profile | null;
+  initialProfile?: any;
   onProfileUpdate?: () => void;
 }
 
@@ -85,11 +78,10 @@ export function UserProfile({
       });
       if (onProfileUpdate) onProfileUpdate();
       setIsOpen(false);
-    } catch (error) {
-      const err = error as Error;
+    } catch (error: any) {
       toast({
         title: 'Update Failed',
-        description: err.message || 'Failed to update profile',
+        description: error.message || 'Failed to update profile',
         variant: 'destructive',
       });
     } finally {
@@ -120,11 +112,10 @@ export function UserProfile({
       });
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error) {
-      const err = error as Error;
+    } catch (error: any) {
       toast({
         title: 'Update Failed',
-        description: err.message || 'Failed to update password',
+        description: error.message || 'Failed to update password',
         variant: 'destructive',
       });
     } finally {
