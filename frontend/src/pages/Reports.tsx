@@ -1,18 +1,24 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/api/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/api/client';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   BarChart,
   Bar,
@@ -23,8 +29,16 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-} from "recharts";
-import { Store, ArrowLeft, Download, TrendingUp, TrendingDown, AlertTriangle, Loader2 } from "lucide-react";
+} from 'recharts';
+import {
+  Store,
+  ArrowLeft,
+  Download,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  Loader2,
+} from 'lucide-react';
 
 interface Bill {
   id: string;
@@ -69,12 +83,14 @@ export default function Reports() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedYear, setSelectedYear] = useState(
+    new Date().getFullYear().toString(),
+  );
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate("/auth");
+      navigate('/auth');
     }
   }, [user, loading, navigate]);
 
@@ -86,51 +102,56 @@ export default function Reports() {
 
   const fetchData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchBills(), fetchInventory(), fetchProfile(), fetchTopSellers()]);
+    await Promise.all([
+      fetchBills(),
+      fetchInventory(),
+      fetchProfile(),
+      fetchTopSellers(),
+    ]);
     setIsLoading(false);
   };
 
   const fetchProfile = async () => {
     try {
-      console.log("Fetching profile...");
+      console.log('Fetching profile...');
       const data = await apiClient.get('/profile');
       if (data) setProfile(data);
     } catch (error) {
-      console.error("Failed to fetch profile:", error);
+      console.error('Failed to fetch profile:', error);
     }
   };
 
   const fetchBills = async () => {
     try {
-      console.log("Fetching bills report...");
+      console.log('Fetching bills report...');
       const data = await apiClient.get('/reports/bills');
       if (Array.isArray(data)) {
         setBills(data);
       }
     } catch (error) {
-      console.error("Failed to fetch bills:", error);
+      console.error('Failed to fetch bills:', error);
     }
   };
 
   const fetchInventory = async () => {
     try {
-      console.log("Fetching inventory...");
+      console.log('Fetching inventory...');
       const data = await apiClient.get('/inventory');
       if (Array.isArray(data)) setInventory(data);
     } catch (error) {
-      console.error("Failed to fetch inventory:", error);
+      console.error('Failed to fetch inventory:', error);
     }
   };
 
   const fetchTopSellers = async () => {
     try {
-      console.log("Fetching top sellers...");
+      console.log('Fetching top sellers...');
       const data = await apiClient.get('/reports/top-sellers');
       if (Array.isArray(data)) {
         setTopSellers(data);
       }
     } catch (error) {
-      console.error("Failed to fetch top sellers:", error);
+      console.error('Failed to fetch top sellers:', error);
     }
   };
 
@@ -142,18 +163,22 @@ export default function Reports() {
     const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const todaySales = bills
-      .filter(b => new Date(b.created_at).toDateString() === today)
+      .filter((b) => new Date(b.created_at).toDateString() === today)
       .reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
 
     const weekSales = bills
-      .filter(b => new Date(b.created_at) >= weekAgo)
+      .filter((b) => new Date(b.created_at) >= weekAgo)
       .reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
 
     const monthSales = bills
-      .filter(b => new Date(b.created_at) >= monthAgo)
+      .filter((b) => new Date(b.created_at) >= monthAgo)
       .reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
 
-    const totalProfit = bills.reduce((sum, b) => sum + ((Number(b.total_amount) || 0) - (Number(b.total_cost) || 0)), 0);
+    const totalProfit = bills.reduce(
+      (sum, b) =>
+        sum + ((Number(b.total_amount) || 0) - (Number(b.total_cost) || 0)),
+      0,
+    );
 
     return { todaySales, weekSales, monthSales, totalProfit };
   };
@@ -166,12 +191,24 @@ export default function Reports() {
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = date.toDateString();
-      const dayBills = bills.filter(b => new Date(b.created_at).toDateString() === dateStr);
+      const dayBills = bills.filter(
+        (b) => new Date(b.created_at).toDateString() === dateStr,
+      );
 
       last7Days.push({
-        date: date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric" }),
-        sales: dayBills.reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0),
-        profit: dayBills.reduce((sum, b) => sum + ((Number(b.total_amount) || 0) - (Number(b.total_cost) || 0)), 0),
+        date: date.toLocaleDateString('en-IN', {
+          weekday: 'short',
+          day: 'numeric',
+        }),
+        sales: dayBills.reduce(
+          (sum, b) => sum + (Number(b.total_amount) || 0),
+          0,
+        ),
+        profit: dayBills.reduce(
+          (sum, b) =>
+            sum + ((Number(b.total_amount) || 0) - (Number(b.total_cost) || 0)),
+          0,
+        ),
       });
     }
 
@@ -181,22 +218,34 @@ export default function Reports() {
   // Get low stock items
   const getLowStockItems = () => {
     return inventory
-      .filter(item => item.quantity <= 5)
+      .filter((item) => item.quantity <= 5)
       .sort((a, b) => a.quantity - b.quantity)
       .slice(0, 5);
   };
 
   // Get GST data for year
   const getGSTData = (year: number) => {
-    const yearBills = bills.filter(b => new Date(b.created_at).getFullYear() === year);
+    const yearBills = bills.filter(
+      (b) => new Date(b.created_at).getFullYear() === year,
+    );
 
     const monthlyData = Array.from({ length: 12 }, (_, i) => {
-      const monthBills = yearBills.filter(b => new Date(b.created_at).getMonth() === i);
-      const totalSales = monthBills.reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
-      const totalCost = monthBills.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0);
+      const monthBills = yearBills.filter(
+        (b) => new Date(b.created_at).getMonth() === i,
+      );
+      const totalSales = monthBills.reduce(
+        (sum, b) => sum + (Number(b.total_amount) || 0),
+        0,
+      );
+      const totalCost = monthBills.reduce(
+        (sum, b) => sum + (Number(b.total_cost) || 0),
+        0,
+      );
 
       return {
-        month: new Date(year, i).toLocaleDateString("en-IN", { month: "short" }),
+        month: new Date(year, i).toLocaleDateString('en-IN', {
+          month: 'short',
+        }),
         sales: totalSales,
         cost: totalCost,
         profit: totalSales - totalCost,
@@ -211,7 +260,7 @@ export default function Reports() {
         profit: acc.profit + m.profit,
         gst: acc.gst + m.gst,
       }),
-      { sales: 0, cost: 0, profit: 0, gst: 0 }
+      { sales: 0, cost: 0, profit: 0, gst: 0 },
     );
 
     return { monthlyData, totals };
@@ -246,9 +295,9 @@ export default function Reports() {
       </head>
       <body>
         <div class="header">
-          <div class="shop-name">${profile?.shop_name || "Shop Name"}</div>
-          <div class="shop-details">${profile?.address || ""}</div>
-          <div class="shop-details">Phone: ${profile?.phone_number || ""}</div>
+          <div class="shop-name">${profile?.shop_name || 'Shop Name'}</div>
+          <div class="shop-details">${profile?.address || ''}</div>
+          <div class="shop-details">Phone: ${profile?.phone_number || ''}</div>
           <div class="title">GST Summary Report - ${year}</div>
         </div>
         
@@ -263,7 +312,9 @@ export default function Reports() {
             </tr>
           </thead>
           <tbody>
-            ${monthlyData.map(m => `
+            ${monthlyData
+              .map(
+                (m) => `
               <tr>
                 <td>${m.month}</td>
                 <td>${m.sales.toLocaleString()}</td>
@@ -271,7 +322,9 @@ export default function Reports() {
                 <td>${m.profit.toLocaleString()}</td>
                 <td>${m.gst.toLocaleString()}</td>
               </tr>
-            `).join("")}
+            `,
+              )
+              .join('')}
             <tr class="totals">
               <td>TOTAL</td>
               <td>₹${totals.sales.toLocaleString()}</td>
@@ -283,13 +336,13 @@ export default function Reports() {
         </table>
         
         <div class="footer">
-          Generated on ${new Date().toLocaleDateString("en-IN")} | ShopSense - Smart Dukaan Management
+          Generated on ${new Date().toLocaleDateString('en-IN')} | ShopSense - Smart Dukaan Management
         </div>
       </body>
       </html>
     `;
 
-    const printWindow = window.open("", "_blank");
+    const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(printContent);
       printWindow.document.close();
@@ -297,7 +350,7 @@ export default function Reports() {
     }
 
     toast({
-      title: "GST Report Generated",
+      title: 'GST Report Generated',
       description: `Report for ${year} is ready to print/save as PDF.`,
     });
 
@@ -316,7 +369,7 @@ export default function Reports() {
   const dailySalesData = getDailySalesData();
   const lowStockItems = getLowStockItems();
   const availableYears = Array.from(
-    new Set(bills.map(b => new Date(b.created_at).getFullYear()))
+    new Set(bills.map((b) => new Date(b.created_at).getFullYear())),
   ).sort((a, b) => b - a);
 
   if (availableYears.length === 0) {
@@ -328,12 +381,18 @@ export default function Reports() {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/dashboard')}
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
               <Store className="h-6 w-6 text-primary" />
-              <span className="text-lg font-bold text-foreground">Reports & Analytics</span>
+              <span className="text-lg font-bold text-foreground">
+                Reports & Analytics
+              </span>
             </div>
           </div>
           <ThemeToggle />
@@ -346,25 +405,35 @@ export default function Reports() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Today</CardDescription>
-              <CardTitle className="text-2xl">₹{stats.todaySales.toLocaleString()}</CardTitle>
+              <CardTitle className="text-2xl">
+                ₹{stats.todaySales.toLocaleString()}
+              </CardTitle>
             </CardHeader>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>This Week</CardDescription>
-              <CardTitle className="text-2xl">₹{stats.weekSales.toLocaleString()}</CardTitle>
+              <CardTitle className="text-2xl">
+                ₹{stats.weekSales.toLocaleString()}
+              </CardTitle>
             </CardHeader>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>This Month</CardDescription>
-              <CardTitle className="text-2xl">₹{stats.monthSales.toLocaleString()}</CardTitle>
+              <CardTitle className="text-2xl">
+                ₹{stats.monthSales.toLocaleString()}
+              </CardTitle>
             </CardHeader>
           </Card>
 
-          <Card className={stats.totalProfit >= 0 ? "border-primary" : "border-destructive"}>
+          <Card
+            className={
+              stats.totalProfit >= 0 ? 'border-primary' : 'border-destructive'
+            }
+          >
             <CardHeader className="pb-2">
               <CardDescription className="flex items-center gap-1">
                 {stats.totalProfit >= 0 ? (
@@ -374,7 +443,9 @@ export default function Reports() {
                 )}
                 Total Profit
               </CardDescription>
-              <CardTitle className={`text-2xl ${stats.totalProfit >= 0 ? "text-primary" : "text-destructive"}`}>
+              <CardTitle
+                className={`text-2xl ${stats.totalProfit >= 0 ? 'text-primary' : 'text-destructive'}`}
+              >
                 ₹{Math.abs(stats.totalProfit).toLocaleString()}
               </CardTitle>
             </CardHeader>
@@ -390,17 +461,25 @@ export default function Reports() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dailySalesData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-muted"
+                  />
                   <XAxis dataKey="date" className="text-xs" />
                   <YAxis className="text-xs" />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
                     }}
                   />
-                  <Bar dataKey="sales" fill="hsl(142, 76%, 36%)" name="Sales (₹)" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey="sales"
+                    fill="hsl(142, 76%, 36%)"
+                    name="Sales (₹)"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -416,14 +495,17 @@ export default function Reports() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={dailySalesData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-muted"
+                  />
                   <XAxis dataKey="date" className="text-xs" />
                   <YAxis className="text-xs" />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
                     }}
                   />
                   <Line
@@ -451,11 +533,16 @@ export default function Reports() {
             </CardHeader>
             <CardContent>
               {topSellers.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">No sales data yet</p>
+                <p className="text-muted-foreground text-center py-4">
+                  No sales data yet
+                </p>
               ) : (
                 <div className="space-y-3">
                   {topSellers.map((item, index) => (
-                    <div key={item.item_name} className="flex justify-between items-center">
+                    <div
+                      key={item.item_name}
+                      className="flex justify-between items-center"
+                    >
                       <div className="flex items-center gap-2">
                         <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-sm flex items-center justify-center">
                           {index + 1}
@@ -463,8 +550,12 @@ export default function Reports() {
                         <span>{item.item_name}</span>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">₹{parseInt(item.revenue.toString()).toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">{item.quantity} sold</p>
+                        <p className="font-medium">
+                          ₹{parseInt(item.revenue.toString()).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.quantity} sold
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -483,14 +574,23 @@ export default function Reports() {
             </CardHeader>
             <CardContent>
               {lowStockItems.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">All items well stocked!</p>
+                <p className="text-muted-foreground text-center py-4">
+                  All items well stocked!
+                </p>
               ) : (
                 <div className="space-y-3">
                   {lowStockItems.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center">
+                    <div
+                      key={item.id}
+                      className="flex justify-between items-center"
+                    >
                       <span>{item.item_name}</span>
-                      <span className={`font-medium ${item.quantity === 0 ? "text-destructive" : "text-yellow-600"}`}>
-                        {item.quantity === 0 ? "Out of stock" : `${item.quantity} left`}
+                      <span
+                        className={`font-medium ${item.quantity === 0 ? 'text-destructive' : 'text-yellow-600'}`}
+                      >
+                        {item.quantity === 0
+                          ? 'Out of stock'
+                          : `${item.quantity} left`}
                       </span>
                     </div>
                   ))}
@@ -542,22 +642,38 @@ export default function Reports() {
                   return (
                     <>
                       <div className="bg-muted/50 p-3 rounded-lg">
-                        <p className="text-sm text-muted-foreground">Total Sales</p>
-                        <p className="text-lg font-semibold">₹{totals.sales.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Total Sales
+                        </p>
+                        <p className="text-lg font-semibold">
+                          ₹{totals.sales.toLocaleString()}
+                        </p>
                       </div>
                       <div className="bg-muted/50 p-3 rounded-lg">
-                        <p className="text-sm text-muted-foreground">Total Cost</p>
-                        <p className="text-lg font-semibold">₹{totals.cost.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Total Cost
+                        </p>
+                        <p className="text-lg font-semibold">
+                          ₹{totals.cost.toLocaleString()}
+                        </p>
                       </div>
                       <div className="bg-muted/50 p-3 rounded-lg">
-                        <p className="text-sm text-muted-foreground">Net Profit</p>
-                        <p className={`text-lg font-semibold ${totals.profit >= 0 ? "text-primary" : "text-destructive"}`}>
+                        <p className="text-sm text-muted-foreground">
+                          Net Profit
+                        </p>
+                        <p
+                          className={`text-lg font-semibold ${totals.profit >= 0 ? 'text-primary' : 'text-destructive'}`}
+                        >
                           ₹{totals.profit.toLocaleString()}
                         </p>
                       </div>
                       <div className="bg-muted/50 p-3 rounded-lg">
-                        <p className="text-sm text-muted-foreground">Est. GST @18%</p>
-                        <p className="text-lg font-semibold">₹{totals.gst.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Est. GST @18%
+                        </p>
+                        <p className="text-lg font-semibold">
+                          ₹{totals.gst.toLocaleString()}
+                        </p>
                       </div>
                     </>
                   );

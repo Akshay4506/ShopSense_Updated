@@ -1,4 +1,10 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  ReactNode,
+} from 'react';
 import { apiClient } from '@/api/client';
 
 export interface User {
@@ -44,7 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const { token, user } = await apiClient.post('/auth/login', { email, password });
+      const { token, user } = await apiClient.post('/auth/login', {
+        email,
+        password,
+      });
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
@@ -67,7 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, login, loginWithToken, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, signUp, login, loginWithToken, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

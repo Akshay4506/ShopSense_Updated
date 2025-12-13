@@ -1,12 +1,27 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/api/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { useToast } from "@/hooks/use-toast";
-import { Store, ArrowLeft, Play, Square, TrendingUp, TrendingDown, Clock, Loader2 } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/api/client';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Store,
+  ArrowLeft,
+  Play,
+  Square,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  Loader2,
+} from 'lucide-react';
 
 interface DailySession {
   id: string;
@@ -37,7 +52,7 @@ export default function DailyOperations() {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate("/auth");
+      navigate('/auth');
     }
   }, [user, loading, navigate]);
 
@@ -60,13 +75,15 @@ export default function DailyOperations() {
 
       if (session) {
         // Fetch bills created during this session
-        const bills: any = await apiClient.get(`/daily-operations/today-bills?startTime=${session.start_time}`);
+        const bills: any = await apiClient.get(
+          `/daily-operations/today-bills?startTime=${session.start_time}`,
+        );
         setTodaysBills(bills || []);
       } else {
         setTodaysBills([]);
       }
     } catch (error) {
-      console.error("Failed to fetch active session", error);
+      console.error('Failed to fetch active session', error);
     }
   };
 
@@ -75,16 +92,16 @@ export default function DailyOperations() {
       const sessions: any = await apiClient.get('/daily-operations/past');
       setPastSessions(sessions || []);
     } catch (error) {
-      console.error("Failed to fetch past sessions", error);
+      console.error('Failed to fetch past sessions', error);
     }
   };
 
   const startDay = async () => {
     if (activeSession) {
       toast({
-        title: "Day Already Started",
-        description: "End the current day before starting a new one.",
-        variant: "destructive",
+        title: 'Day Already Started',
+        description: 'End the current day before starting a new one.',
+        variant: 'destructive',
       });
       return;
     }
@@ -92,19 +109,22 @@ export default function DailyOperations() {
     setIsStarting(true);
 
     try {
-      const newSession: any = await apiClient.post('/daily-operations/start', {});
+      const newSession: any = await apiClient.post(
+        '/daily-operations/start',
+        {},
+      );
 
       setActiveSession(newSession);
       setTodaysBills([]);
       toast({
-        title: "Day Started!",
+        title: 'Day Started!',
         description: "Good luck with today's sales!",
       });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to start day. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to start day. Please try again.',
+        variant: 'destructive',
       });
     }
 
@@ -128,19 +148,20 @@ export default function DailyOperations() {
 
       const profit = totalSales - totalCost;
       toast({
-        title: "Day Ended!",
-        description: profit >= 0
-          ? `Today's Profit: ₹${profit}`
-          : `Today's Loss: ₹${Math.abs(profit)}`,
+        title: 'Day Ended!',
+        description:
+          profit >= 0
+            ? `Today's Profit: ₹${profit}`
+            : `Today's Loss: ₹${Math.abs(profit)}`,
       });
 
       // Refresh data
       fetchData();
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to end day. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to end day. Please try again.',
+        variant: 'destructive',
       });
     }
 
@@ -155,16 +176,16 @@ export default function DailyOperations() {
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Date(dateString).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
     });
   };
 
@@ -183,12 +204,18 @@ export default function DailyOperations() {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/dashboard')}
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
               <Store className="h-6 w-6 text-primary" />
-              <span className="text-lg font-bold text-foreground">Daily Operations</span>
+              <span className="text-lg font-bold text-foreground">
+                Daily Operations
+              </span>
             </div>
           </div>
           <ThemeToggle />
@@ -203,8 +230,7 @@ export default function DailyOperations() {
             <CardDescription>
               {activeSession
                 ? `Started at ${formatTime(activeSession.start_time)}`
-                : "Start a new day to track sales"
-              }
+                : 'Start a new day to track sales'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -250,7 +276,9 @@ export default function DailyOperations() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardDescription>Total Sales</CardDescription>
-                  <CardTitle className="text-2xl text-primary">₹{stats.totalSales}</CardTitle>
+                  <CardTitle className="text-2xl text-primary">
+                    ₹{stats.totalSales}
+                  </CardTitle>
                 </CardHeader>
               </Card>
 
@@ -262,7 +290,11 @@ export default function DailyOperations() {
               </Card>
             </div>
 
-            <Card className={stats.profit >= 0 ? "border-primary" : "border-destructive"}>
+            <Card
+              className={
+                stats.profit >= 0 ? 'border-primary' : 'border-destructive'
+              }
+            >
               <CardHeader>
                 <CardDescription className="flex items-center gap-2">
                   {stats.profit >= 0 ? (
@@ -270,10 +302,13 @@ export default function DailyOperations() {
                   ) : (
                     <TrendingDown className="h-4 w-4 text-destructive" />
                   )}
-                  {stats.profit >= 0 ? "Profit" : "Loss"}
+                  {stats.profit >= 0 ? 'Profit' : 'Loss'}
                 </CardDescription>
-                <CardTitle className={`text-3xl ${stats.profit >= 0 ? "text-primary" : "text-destructive"}`}>
-                  {stats.profit >= 0 ? "₹" : "-₹"}{Math.abs(stats.profit)}
+                <CardTitle
+                  className={`text-3xl ${stats.profit >= 0 ? 'text-primary' : 'text-destructive'}`}
+                >
+                  {stats.profit >= 0 ? '₹' : '-₹'}
+                  {Math.abs(stats.profit)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -304,16 +339,24 @@ export default function DailyOperations() {
                     <CardContent className="py-4">
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="font-medium">{formatDate(session.start_time)}</p>
+                          <p className="font-medium">
+                            {formatDate(session.start_time)}
+                          </p>
                           <p className="text-sm text-muted-foreground flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {formatTime(session.start_time)} - {formatTime(session.end_time!)}
+                            {formatTime(session.start_time)} -{' '}
+                            {formatTime(session.end_time!)}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-muted-foreground">Sales: ₹{session.total_sales}</p>
-                          <p className={`font-semibold ${profit >= 0 ? "text-primary" : "text-destructive"}`}>
-                            {profit >= 0 ? "Profit" : "Loss"}: ₹{Math.abs(profit)}
+                          <p className="text-sm text-muted-foreground">
+                            Sales: ₹{session.total_sales}
+                          </p>
+                          <p
+                            className={`font-semibold ${profit >= 0 ? 'text-primary' : 'text-destructive'}`}
+                          >
+                            {profit >= 0 ? 'Profit' : 'Loss'}: ₹
+                            {Math.abs(profit)}
                           </p>
                         </div>
                       </div>

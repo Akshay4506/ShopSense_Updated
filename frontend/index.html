@@ -1,94 +1,116 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#166534" />
+    <!-- TODO: Set the document title to the name of your application -->
+    <title>ShopSense</title>
+    <meta
+      name="description"
+      content="Smart Dukaan Management - Track inventory, create bills, and grow your business."
+    />
+    <meta name="author" content="ShopSense Team" />
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#166534" />
-  <!-- TODO: Set the document title to the name of your application -->
-  <title>ShopSense</title>
-  <meta name="description" content="Smart Dukaan Management - Track inventory, create bills, and grow your business." />
-  <meta name="author" content="ShopSense Team" />
+    <!-- TODO: Update og:title to match your application name -->
+    <meta property="og:title" content="ShopSense" />
+    <meta
+      property="og:description"
+      content="Smart Dukaan Management - Track inventory, create bills, and grow your business."
+    />
+    <meta property="og:type" content="website" />
+  </head>
 
-  <!-- TODO: Update og:title to match your application name -->
-  <meta property="og:title" content="ShopSense" />
-  <meta property="og:description"
-    content="Smart Dukaan Management - Track inventory, create bills, and grow your business." />
-  <meta property="og:type" content="website" />
-</head>
-
-<body>
-  <div id="error-display" style="color: red; padding: 20px; display: none;"></div>
-  <script>
-    window.onerror = function (message, source, lineno, colno, error) {
-      var display = document.getElementById('error-display');
-      display.style.display = 'block';
-      display.innerHTML += '<h3>Error: ' + message + '</h3><p>' + source + ':' + lineno + '</p>';
-    };
-    window.addEventListener('unhandledrejection', function (event) {
-      var display = document.getElementById('error-display');
-      display.style.display = 'block';
-      display.innerHTML += '<h3>Promise Rejection: ' + event.reason + '</h3>';
-    });
-  </script>
-  <style>
-    .initial-loader {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      font-family: system-ui, -apple-system, sans-serif;
-      background-color: #ffffff;
-      color: #0f172a;
-    }
-
-    .initial-loader-icon {
-      width: 64px;
-      height: 64px;
-      margin-bottom: 20px;
-      animation: bounce 1s infinite;
-    }
-
-    @keyframes bounce {
-
-      0%,
-      100% {
-        transform: translateY(-25%);
-        animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-      }
-
-      50% {
-        transform: translateY(0);
-        animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-      }
-    }
-
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
+  <body>
+    <div
+      id="error-display"
+      style="color: red; padding: 20px; display: none"
+    ></div>
+    <script>
+      window.onerror = function (message, source, lineno, colno, error) {
+        var display = document.getElementById('error-display');
+        display.style.display = 'block';
+        display.innerHTML +=
+          '<h3>Error: ' + message + '</h3><p>' + source + ':' + lineno + '</p>';
+      };
+      window.addEventListener('unhandledrejection', function (event) {
+        var display = document.getElementById('error-display');
+        display.style.display = 'block';
+        display.innerHTML += '<h3>Promise Rejection: ' + event.reason + '</h3>';
+      });
+    </script>
+    <style>
       .initial-loader {
-        background-color: #020817;
-        color: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background-color: #ffffff;
+        color: #0f172a;
       }
-    }
-  </style>
-  <div id="root">
-    <div class="initial-loader">
-      <div style="text-align: center;">
-        <svg class="initial-loader-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
-          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-          <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
-          <path d="M2 7h20" />
-          <path
-            d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7" />
-        </svg>
-        <h1>Setting up Shop...</h1>
+
+      .initial-loader-icon {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 20px;
+        animation: bounce 1s infinite;
+      }
+
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(-25%);
+          animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+        }
+
+        50% {
+          transform: translateY(0);
+          animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+        }
+      }
+
+      /* Dark mode support */
+      @media (prefers-color-scheme: dark) {
+        .initial-loader {
+          background-color: #020817;
+          color: #f8fafc;
+        }
+      }
+    </style>
+    <div id="root">
+      <div class="initial-loader">
+        <div style="text-align: center">
+          <svg
+            class="initial-loader-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"
+            />
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+            <path d="M2 7h20" />
+            <path
+              d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"
+            />
+          </svg>
+          <h1>Setting up Shop...</h1>
+        </div>
       </div>
     </div>
-  </div>
-  <script type="module" src="/src/main.tsx"></script>
-</body>
-
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

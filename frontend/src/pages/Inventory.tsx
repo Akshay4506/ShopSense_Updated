@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/api/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/api/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -13,19 +13,27 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { useToast } from "@/hooks/use-toast";
-import { Store, ArrowLeft, Plus, Search, Edit2, Trash2, AlertTriangle } from "lucide-react";
+} from '@/components/ui/select';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Store,
+  ArrowLeft,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  AlertTriangle,
+} from 'lucide-react';
 
-import { CrazyLoader } from "@/components/CrazyLoader";
+import { CrazyLoader } from '@/components/CrazyLoader';
 
 interface InventoryItem {
   id: string;
@@ -36,7 +44,7 @@ interface InventoryItem {
   unit: string;
 }
 
-const UNITS = ["pcs", "kg", "g", "litre", "ml", "dozen", "pack"];
+const UNITS = ['pcs', 'kg', 'g', 'litre', 'ml', 'dozen', 'pack'];
 
 export default function Inventory() {
   const { user, loading } = useAuth();
@@ -44,21 +52,21 @@ export default function Inventory() {
   const { toast } = useToast();
 
   const [items, setItems] = useState<InventoryItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
   // Form state
-  const [itemName, setItemName] = useState("");
-  const [costPrice, setCostPrice] = useState("");
-  const [sellingPrice, setSellingPrice] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [unit, setUnit] = useState("pcs");
+  const [itemName, setItemName] = useState('');
+  const [costPrice, setCostPrice] = useState('');
+  const [sellingPrice, setSellingPrice] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [unit, setUnit] = useState('pcs');
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate("/auth");
+      navigate('/auth');
     }
   }, [user, loading, navigate]);
 
@@ -74,19 +82,19 @@ export default function Inventory() {
       setItems(data || []);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to fetch inventory",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch inventory',
+        variant: 'destructive',
       });
     }
   };
 
   const resetForm = () => {
-    setItemName("");
-    setCostPrice("");
-    setSellingPrice("");
-    setQuantity("");
-    setUnit("pcs");
+    setItemName('');
+    setCostPrice('');
+    setSellingPrice('');
+    setQuantity('');
+    setUnit('pcs');
   };
 
   const handleAddItem = async (e: React.FormEvent) => {
@@ -105,7 +113,7 @@ export default function Inventory() {
       });
 
       toast({
-        title: "Item Added",
+        title: 'Item Added',
         description: `${itemName} has been added to inventory.`,
       });
       resetForm();
@@ -113,9 +121,9 @@ export default function Inventory() {
       fetchInventory();
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to add item",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to add item',
+        variant: 'destructive',
       });
     }
   };
@@ -137,7 +145,7 @@ export default function Inventory() {
       });
 
       toast({
-        title: "Item Updated",
+        title: 'Item Updated',
         description: `${itemName} has been updated.`,
       });
       resetForm();
@@ -146,31 +154,29 @@ export default function Inventory() {
       fetchInventory();
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update item",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to update item',
+        variant: 'destructive',
       });
     }
   };
-
 
   const handleDeleteItem = async (item: InventoryItem) => {
     try {
       await apiClient.delete(`/inventory/${item.id}`);
       toast({
-        title: "Item Deleted",
+        title: 'Item Deleted',
         description: `${item.item_name} has been removed.`,
       });
       fetchInventory();
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to delete item",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to delete item',
+        variant: 'destructive',
       });
     }
   };
-
 
   const openEditDialog = (item: InventoryItem) => {
     setEditingItem(item);
@@ -183,13 +189,18 @@ export default function Inventory() {
   };
 
   const filteredItems = items.filter((item) =>
-    item.item_name.toLowerCase().includes(searchQuery.toLowerCase())
+    item.item_name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const getStockStatus = (quantity: number) => {
-    if (quantity === 0) return { label: "Out of Stock", className: "text-destructive" };
-    if (quantity <= 5) return { label: `Low Stock (${quantity})`, className: "text-yellow-600" };
-    return { label: `${quantity} in stock`, className: "text-muted-foreground" };
+    if (quantity === 0)
+      return { label: 'Out of Stock', className: 'text-destructive' };
+    if (quantity <= 5)
+      return { label: `Low Stock (${quantity})`, className: 'text-yellow-600' };
+    return {
+      label: `${quantity} in stock`,
+      className: 'text-muted-foreground',
+    };
   };
 
   if (loading) {
@@ -201,12 +212,18 @@ export default function Inventory() {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/dashboard')}
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
               <Store className="h-6 w-6 text-primary" />
-              <span className="text-lg font-bold text-foreground">Inventory</span>
+              <span className="text-lg font-bold text-foreground">
+                Inventory
+              </span>
             </div>
           </div>
           <ThemeToggle />
@@ -323,8 +340,8 @@ export default function Inventory() {
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">
                 {searchQuery
-                  ? "No items found matching your search."
-                  : "No items in inventory. Add your first item!"}
+                  ? 'No items found matching your search.'
+                  : 'No items in inventory. Add your first item!'}
               </p>
             </CardContent>
           </Card>
@@ -333,10 +350,15 @@ export default function Inventory() {
             {filteredItems.map((item) => {
               const stockStatus = getStockStatus(item.quantity);
               return (
-                <Card key={item.id} className={item.quantity === 0 ? "border-destructive/50" : ""}>
+                <Card
+                  key={item.id}
+                  className={item.quantity === 0 ? 'border-destructive/50' : ''}
+                >
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{item.item_name}</CardTitle>
+                      <CardTitle className="text-lg">
+                        {item.item_name}
+                      </CardTitle>
                       <div className="flex gap-1">
                         <Button
                           variant="ghost"
@@ -358,16 +380,24 @@ export default function Inventory() {
                   <CardContent>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Cost Price:</span>
+                        <span className="text-muted-foreground">
+                          Cost Price:
+                        </span>
                         <span>₹{item.cost_price}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Selling Price:</span>
-                        <span className="font-semibold">₹{item.selling_price}</span>
+                        <span className="text-muted-foreground">
+                          Selling Price:
+                        </span>
+                        <span className="font-semibold">
+                          ₹{item.selling_price}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Stock:</span>
-                        <span className={`flex items-center gap-1 ${stockStatus.className}`}>
+                        <span
+                          className={`flex items-center gap-1 ${stockStatus.className}`}
+                        >
                           {item.quantity <= 5 && item.quantity >= 0 && (
                             <AlertTriangle className="h-3 w-3" />
                           )}
@@ -375,8 +405,16 @@ export default function Inventory() {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Profit/unit:</span>
-                        <span className={item.selling_price - item.cost_price >= 0 ? "text-primary" : "text-destructive"}>
+                        <span className="text-muted-foreground">
+                          Profit/unit:
+                        </span>
+                        <span
+                          className={
+                            item.selling_price - item.cost_price >= 0
+                              ? 'text-primary'
+                              : 'text-destructive'
+                          }
+                        >
                           ₹{item.selling_price - item.cost_price}
                         </span>
                       </div>
@@ -394,9 +432,7 @@ export default function Inventory() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Item</DialogTitle>
-            <DialogDescription>
-              Update item details
-            </DialogDescription>
+            <DialogDescription>Update item details</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditItem} className="space-y-4">
             <div className="space-y-2">

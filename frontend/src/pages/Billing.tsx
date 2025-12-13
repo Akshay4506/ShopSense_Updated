@@ -1,30 +1,39 @@
-import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/api/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { useToast } from "@/hooks/use-toast";
-import { Store, ArrowLeft, Plus, Trash2, Download, Loader2, Mic, MicOff } from "lucide-react";
-import html2canvas from "html2canvas";
-import useSpeechRecognition from "@/hooks/useSpeechRecognition";
-import { Receipt } from "@/components/Receipt";
+import { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/api/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Store,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Download,
+  Loader2,
+  Mic,
+  MicOff,
+} from 'lucide-react';
+import html2canvas from 'html2canvas';
+import useSpeechRecognition from '@/hooks/useSpeechRecognition';
+import { Receipt } from '@/components/Receipt';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 interface InventoryItem {
   id: string;
@@ -64,7 +73,7 @@ export default function Billing() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGeneratingBill, setIsGeneratingBill] = useState(false);
 
@@ -84,20 +93,41 @@ export default function Billing() {
     // Map common number words to digits
     // Map common number words to digits (English & Telugu)
     const numberMap: { [key: string]: string } = {
-      'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
-      'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10',
-      'a': '1', 'an': '1',
+      one: '1',
+      two: '2',
+      three: '3',
+      four: '4',
+      five: '5',
+      six: '6',
+      seven: '7',
+      eight: '8',
+      nine: '9',
+      ten: '10',
+      a: '1',
+      an: '1',
       // Telugu numbers
-      'ఒక': '1', 'రెండు': '2', 'మూడు': '3', 'నాలుగు': '4', 'ఐదు': '5',
-      'ఆరు': '6', 'ఏడు': '7', 'ఎనిమిది': '8', 'తొమ్మిది': '9', 'పది': '10',
-      'okati': '1', 'oka': '1'
+      ఒక: '1',
+      రెండు: '2',
+      మూడు: '3',
+      నాలుగు: '4',
+      ఐదు: '5',
+      ఆరు: '6',
+      ఏడు: '7',
+      ఎనిమిది: '8',
+      తొమ్మిది: '9',
+      పది: '10',
+      okati: '1',
+      oka: '1',
     };
 
     // Replace number words at the start of string
     // e.g. "One kg" -> "1 kg", "ఒక కిలో" -> "1 కిలో"
     const firstWord = normalizedInput.split(' ')[0].toLowerCase();
     if (numberMap[firstWord]) {
-      normalizedInput = normalizedInput.replace(new RegExp(`^${firstWord}`, 'i'), numberMap[firstWord]);
+      normalizedInput = normalizedInput.replace(
+        new RegExp(`^${firstWord}`, 'i'),
+        numberMap[firstWord],
+      );
     }
 
     // Regex updated to allow non-English letters in unit (e.g. కిలో)
@@ -106,7 +136,7 @@ export default function Billing() {
     // ([^\s\d]+)? -> Captures unit (anything not space or digit, e.g. kg, lbs, కిలో)
     const quantityRegex = /(\d+(\.\d+)?)\s*([^\s\d]+)?/;
     let quantity = 1;
-    let unit = "";
+    let unit = '';
     let itemName = normalizedInput;
 
     const match = normalizedInput.match(quantityRegex);
@@ -115,52 +145,77 @@ export default function Billing() {
       if (!isNaN(num)) {
         if (normalizedInput.startsWith(match[0])) {
           quantity = num;
-          unit = match[3] || "";
+          unit = match[3] || '';
           itemName = normalizedInput.substring(match[0].length).trim();
         }
       }
     }
 
     // Clean up punctuation from itemName
-    itemName = itemName.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+    itemName = itemName.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '').trim();
 
     // Translation Map (Telugu -> English)
     const translationMap: { [key: string]: string } = {
-        'బియ్యం': 'rice', 'biyyam': 'rice',
-        'పప్పు': 'dal', 'pappu': 'dal',
-        'పాలు': 'milk', 'paalu': 'milk',
-        'పంచదార': 'sugar', 'panchadara': 'sugar', 'చెక్కర': 'sugar', 'chekkara': 'sugar',
-        'టమాటా': 'tomato', 'tamata': 'tomato',
-        'ఉల్లిపాయ': 'onion', 'ullipaya': 'onion',
-        'బంగాళాదుంప': 'potato', 'bangaladumpa': 'potato',
-        'నూనె': 'oil', 'nune': 'oil',
-        'ఉప్పు': 'salt', 'uppu': 'salt'
+      బియ్యం: 'rice',
+      biyyam: 'rice',
+      పప్పు: 'dal',
+      pappu: 'dal',
+      పాలు: 'milk',
+      paalu: 'milk',
+      పంచదార: 'sugar',
+      panchadara: 'sugar',
+      చెక్కర: 'sugar',
+      chekkara: 'sugar',
+      టమాటా: 'tomato',
+      tamata: 'tomato',
+      ఉల్లిపాయ: 'onion',
+      ullipaya: 'onion',
+      బంగాళాదుంప: 'potato',
+      bangaladumpa: 'potato',
+      నూనె: 'oil',
+      nune: 'oil',
+      ఉప్పు: 'salt',
+      uppu: 'salt',
     };
 
     // Auto-translate if applicable
     // Check exact match first
     if (translationMap[itemName.toLowerCase()]) {
-        itemName = translationMap[itemName.toLowerCase()];
+      itemName = translationMap[itemName.toLowerCase()];
     } else {
-        // Check partial match (e.g. "sona masoori biyyam" -> contains biyyam)
-        // Simple heuristic: if the phrase contains a known key, replace it or assume that's the item.
-        // For accurate matching, let's substitute known words.
-        Object.keys(translationMap).forEach(key => {
-            if (itemName.toLowerCase().includes(key)) {
-                itemName = itemName.toLowerCase().replace(key, translationMap[key]);
-            }
-        });
+      // Check partial match (e.g. "sona masoori biyyam" -> contains biyyam)
+      // Simple heuristic: if the phrase contains a known key, replace it or assume that's the item.
+      // For accurate matching, let's substitute known words.
+      Object.keys(translationMap).forEach((key) => {
+        if (itemName.toLowerCase().includes(key)) {
+          itemName = itemName.toLowerCase().replace(key, translationMap[key]);
+        }
+      });
     }
 
-    const exactMatch = inventory.find(i => i.item_name.toLowerCase() === input.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim());
-    if (exactMatch) return { item_name: exactMatch.item_name, quantity: 1, unit: exactMatch.unit };
+    const exactMatch = inventory.find(
+      (i) =>
+        i.item_name.toLowerCase() ===
+        input
+          .toLowerCase()
+          .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')
+          .trim(),
+    );
+    if (exactMatch)
+      return {
+        item_name: exactMatch.item_name,
+        quantity: 1,
+        unit: exactMatch.unit,
+      };
 
-    const itemMatch = inventory.find(i => i.item_name.toLowerCase().includes(itemName.toLowerCase()));
+    const itemMatch = inventory.find((i) =>
+      i.item_name.toLowerCase().includes(itemName.toLowerCase()),
+    );
 
     return {
       item_name: itemMatch ? itemMatch.item_name : itemName,
       quantity: quantity,
-      unit: unit || (itemMatch ? itemMatch.unit : "pcs")
+      unit: unit || (itemMatch ? itemMatch.unit : 'pcs'),
     };
   };
 
@@ -171,14 +226,14 @@ export default function Billing() {
     try {
       const data = parseItemInput(inputSafe, inventory);
       const matchedItem = inventory.find(
-        item => item.item_name.toLowerCase() === data.item_name.toLowerCase()
+        (item) => item.item_name.toLowerCase() === data.item_name.toLowerCase(),
       );
 
       if (!matchedItem) {
         toast({
-          title: "Item not found",
+          title: 'Item not found',
           description: `"${data.item_name}" is not in your inventory.`,
-          variant: "destructive",
+          variant: 'destructive',
         });
         setIsProcessing(false);
         return false;
@@ -186,16 +241,16 @@ export default function Billing() {
 
       if (matchedItem.quantity === 0) {
         toast({
-          title: "Out of Stock",
+          title: 'Out of Stock',
           description: `${matchedItem.item_name} is out of stock.`,
-          variant: "destructive",
+          variant: 'destructive',
         });
         setIsProcessing(false);
         return false;
       }
 
       const existingIndex = cart.findIndex(
-        item => item.inventory_id === matchedItem.id
+        (item) => item.inventory_id === matchedItem.id,
       );
 
       if (existingIndex >= 0) {
@@ -204,9 +259,9 @@ export default function Billing() {
 
         if (newQty > matchedItem.quantity) {
           toast({
-            title: "Insufficient Stock",
+            title: 'Insufficient Stock',
             description: `Only ${matchedItem.quantity} ${matchedItem.unit} available.`,
-            variant: "destructive",
+            variant: 'destructive',
           });
           setIsProcessing(false);
           return false;
@@ -217,38 +272,40 @@ export default function Billing() {
       } else {
         if (data.quantity > matchedItem.quantity) {
           toast({
-            title: "Insufficient Stock",
+            title: 'Insufficient Stock',
             description: `Only ${matchedItem.quantity} ${matchedItem.unit} available.`,
-            variant: "destructive",
+            variant: 'destructive',
           });
           setIsProcessing(false);
           return false;
         }
 
-        setCart(prev => [...prev, {
-          inventory_id: matchedItem.id,
-          item_name: matchedItem.item_name,
-          quantity: data.quantity,
-          unit: matchedItem.unit,
-          cost_price: matchedItem.cost_price,
-          selling_price: matchedItem.selling_price,
-          available_stock: matchedItem.quantity,
-        }]);
+        setCart((prev) => [
+          ...prev,
+          {
+            inventory_id: matchedItem.id,
+            item_name: matchedItem.item_name,
+            quantity: data.quantity,
+            unit: matchedItem.unit,
+            cost_price: matchedItem.cost_price,
+            selling_price: matchedItem.selling_price,
+            available_stock: matchedItem.quantity,
+          },
+        ]);
       }
 
       toast({
-        title: "Added to cart",
+        title: 'Added to cart',
         description: `${data.quantity} ${matchedItem.unit} ${matchedItem.item_name}`,
       });
 
       return true;
-
     } catch (error) {
-      console.error("Error parsing item:", error);
+      console.error('Error parsing item:', error);
       toast({
-        title: "Error",
-        description: "Failed to process item.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to process item.',
+        variant: 'destructive',
       });
       return false;
     } finally {
@@ -259,24 +316,25 @@ export default function Billing() {
   // 2. Voice Handling (Calls Helper)
   const handleVoiceData = async (transcript: string) => {
     // Determine input by removing trailing dot if present (common in voice)
-    const cleanTranscript = transcript.replace(/\.$/, "");
+    const cleanTranscript = transcript.replace(/\.$/, '');
 
     setInputValue(cleanTranscript);
     toast({
-      title: "Heard:",
+      title: 'Heard:',
       description: cleanTranscript,
     });
     const success = await processAddItem(cleanTranscript);
     if (success) {
       // Clear input after short delay to show what was recognized
-      setTimeout(() => setInputValue(""), 1000);
+      setTimeout(() => setInputValue(''), 1000);
     }
   };
 
-  const [language, setLanguage] = useState("en-IN");
+  const [language, setLanguage] = useState('en-IN');
 
   // 3. Custom Hook (Must be top level, unconditional)
-  const { isListening, startListening, stopListening, hasRecognitionSupport } = useSpeechRecognition(handleVoiceData, language);
+  const { isListening, startListening, stopListening, hasRecognitionSupport } =
+    useSpeechRecognition(handleVoiceData, language);
 
   const toggleListening = () => {
     if (isListening) {
@@ -284,9 +342,9 @@ export default function Billing() {
     } else {
       startListening();
       toast({
-        title: "Listening...",
-        description: language === 'te-IN' ? "Matladandi..." : "Speak items...",
-        variant: "default",
+        title: 'Listening...',
+        description: language === 'te-IN' ? 'Matladandi...' : 'Speak items...',
+        variant: 'default',
       });
     }
   };
@@ -294,7 +352,7 @@ export default function Billing() {
   // 4. Effects
   useEffect(() => {
     if (!loading && !user) {
-      navigate("/auth");
+      navigate('/auth');
     }
   }, [user, loading, navigate]);
 
@@ -310,7 +368,7 @@ export default function Billing() {
       const data: any = await apiClient.get('/inventory');
       setInventory(data || []);
     } catch (error) {
-      console.error("Failed to fetch inventory", error);
+      console.error('Failed to fetch inventory', error);
     }
   };
 
@@ -319,7 +377,7 @@ export default function Billing() {
       const data: any = await apiClient.get('/profile');
       setProfile(data);
     } catch (error) {
-      console.error("Failed to fetch profile", error);
+      console.error('Failed to fetch profile', error);
     }
   };
 
@@ -327,12 +385,12 @@ export default function Billing() {
   const handleAddItem = async () => {
     if (!inputValue.trim()) return;
     await processAddItem(inputValue);
-    setInputValue("");
+    setInputValue('');
     inputRef.current?.focus();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !isProcessing) {
+    if (e.key === 'Enter' && !isProcessing) {
       handleAddItem();
     }
   };
@@ -350,9 +408,9 @@ export default function Billing() {
     const item = cart[index];
     if (newQty > item.available_stock) {
       toast({
-        title: "Insufficient Stock",
+        title: 'Insufficient Stock',
         description: `Only ${item.available_stock} ${item.unit} available.`,
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
@@ -363,7 +421,10 @@ export default function Billing() {
   };
 
   const getTotal = () => {
-    return cart.reduce((sum, item) => sum + (item.selling_price * item.quantity), 0);
+    return cart.reduce(
+      (sum, item) => sum + item.selling_price * item.quantity,
+      0,
+    );
   };
 
   const downloadBillImage = async () => {
@@ -371,12 +432,12 @@ export default function Billing() {
 
     try {
       const canvas = await html2canvas(receiptRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2 // Higher resolution
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher resolution
       });
 
-      const image = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
+      const image = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
       link.href = image;
       link.download = `Bill-${billPreview.bill_number}.png`;
       document.body.appendChild(link);
@@ -386,16 +447,15 @@ export default function Billing() {
       setIsPreviewOpen(false);
 
       toast({
-        title: "Downloaded",
-        description: "Bill image saved successfully.",
+        title: 'Downloaded',
+        description: 'Bill image saved successfully.',
       });
-
     } catch (error) {
-      console.error("Image generation failed:", error);
+      console.error('Image generation failed:', error);
       toast({
-        title: "Download Failed",
-        description: "Could not generate the bill image.",
-        variant: "destructive"
+        title: 'Download Failed',
+        description: 'Could not generate the bill image.',
+        variant: 'destructive',
       });
     }
   };
@@ -409,8 +469,11 @@ export default function Billing() {
       const totalAmount = getTotal();
       const billDataPayload = {
         total_amount: totalAmount,
-        total_cost: cart.reduce((sum, item) => sum + (item.cost_price * item.quantity), 0),
-        items: cart
+        total_cost: cart.reduce(
+          (sum, item) => sum + item.cost_price * item.quantity,
+          0,
+        ),
+        items: cart,
       };
 
       const result: any = await apiClient.post('/billing', billDataPayload);
@@ -420,14 +483,14 @@ export default function Billing() {
         bill_number: result.bill_number || 0,
         created_at: new Date(),
         total_amount: totalAmount,
-        items: [...cart]
+        items: [...cart],
       };
 
       setBillPreview(previewData);
       setIsPreviewOpen(true); // Open modal
 
       toast({
-        title: "Bill Generated!",
+        title: 'Bill Generated!',
         description: `Bill #${result.bill_number} created.`,
       });
 
@@ -435,11 +498,11 @@ export default function Billing() {
       setCart([]);
       fetchInventory();
     } catch (error: any) {
-      console.error("Error generating bill:", error);
+      console.error('Error generating bill:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to generate bill.",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to generate bill.',
+        variant: 'destructive',
       });
     }
 
@@ -461,7 +524,11 @@ export default function Billing() {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/dashboard')}
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
@@ -504,17 +571,24 @@ export default function Billing() {
               {/* Mic Icon */}
               {hasRecognitionSupport && (
                 <Button
-                  variant={isListening ? "destructive" : "secondary"}
+                  variant={isListening ? 'destructive' : 'secondary'}
                   onClick={toggleListening}
                   disabled={isProcessing}
-                  title={isListening ? "Stop Listening" : "Start Voice Input"}
-                  className={isListening ? "animate-pulse" : ""}
+                  title={isListening ? 'Stop Listening' : 'Start Voice Input'}
+                  className={isListening ? 'animate-pulse' : ''}
                 >
-                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  {isListening ? (
+                    <MicOff className="h-4 w-4" />
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
                 </Button>
               )}
 
-              <Button onClick={handleAddItem} disabled={isProcessing || !inputValue.trim()}>
+              <Button
+                onClick={handleAddItem}
+                disabled={isProcessing || !inputValue.trim()}
+              >
                 {isProcessing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -531,7 +605,9 @@ export default function Billing() {
         {/* Cart Section */}
         <Card className="flex-1 flex flex-col mb-4">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Cart ({cart.length} items)</CardTitle>
+            <CardTitle className="text-base">
+              Cart ({cart.length} items)
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-auto">
             {cart.length === 0 ? (
@@ -556,7 +632,9 @@ export default function Billing() {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => updateCartQuantity(index, item.quantity - 1)}
+                        onClick={() =>
+                          updateCartQuantity(index, item.quantity - 1)
+                        }
                       >
                         -
                       </Button>
@@ -567,7 +645,9 @@ export default function Billing() {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => updateCartQuantity(index, item.quantity + 1)}
+                        onClick={() =>
+                          updateCartQuantity(index, item.quantity + 1)
+                        }
                       >
                         +
                       </Button>
@@ -595,7 +675,9 @@ export default function Billing() {
           <CardContent className="py-4">
             <div className="flex justify-between items-center mb-4">
               <span className="text-lg font-semibold">Total</span>
-              <span className="text-2xl font-bold text-primary">₹{getTotal()}</span>
+              <span className="text-2xl font-bold text-primary">
+                ₹{getTotal()}
+              </span>
             </div>
             <Button
               className="w-full"
@@ -632,7 +714,11 @@ export default function Billing() {
             <Button className="w-full" onClick={downloadBillImage}>
               <Download className="mr-2 h-4 w-4" /> Download Image
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => setIsPreviewOpen(false)}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setIsPreviewOpen(false)}
+            >
               Close
             </Button>
           </DialogFooter>

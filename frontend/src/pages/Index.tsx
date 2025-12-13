@@ -1,10 +1,17 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { Store, Package, Receipt, TrendingUp, ArrowRight, Loader2 } from "lucide-react";
-import { CrazyLoader } from "@/components/CrazyLoader";
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import {
+  Store,
+  Package,
+  Receipt,
+  TrendingUp,
+  ArrowRight,
+  Loader2,
+} from 'lucide-react';
+import { CrazyLoader } from '@/components/CrazyLoader';
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -12,7 +19,7 @@ export default function Index() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/dashboard");
+      navigate('/dashboard');
     }
   }, [user, loading, navigate]);
 
@@ -26,13 +33,13 @@ export default function Index() {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Store className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">ShopSense</span>
+            <span className="text-2xl font-bold text-foreground">
+              ShopSense
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button onClick={() => navigate("/auth")}>
-              Login
-            </Button>
+            <Button onClick={() => navigate('/auth')}>Login</Button>
           </div>
         </div>
       </header>
@@ -45,10 +52,14 @@ export default function Index() {
               Smart Dukaan Management
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              The simple, powerful way to manage your kirana store. Track inventory,
-              create bills, and grow your business.
+              The simple, powerful way to manage your kirana store. Track
+              inventory, create bills, and grow your business.
             </p>
-            <Button size="lg" onClick={() => navigate("/auth")} className="gap-2">
+            <Button
+              size="lg"
+              onClick={() => navigate('/auth')}
+              className="gap-2"
+            >
               Get Started <ArrowRight className="h-5 w-5" />
             </Button>
           </div>
@@ -69,7 +80,8 @@ export default function Index() {
                   Inventory Management
                 </h3>
                 <p className="text-muted-foreground">
-                  Track your stock, set prices, and get alerts when items run low.
+                  Track your stock, set prices, and get alerts when items run
+                  low.
                 </p>
               </div>
 
@@ -81,7 +93,8 @@ export default function Index() {
                   Easy Billing
                 </h3>
                 <p className="text-muted-foreground">
-                  Create professional bills quickly. Supports Hindi, English & Hinglish.
+                  Create professional bills quickly. Supports Hindi, English &
+                  Hinglish.
                 </p>
               </div>
 
@@ -93,7 +106,8 @@ export default function Index() {
                   Daily Profit Tracking
                 </h3>
                 <p className="text-muted-foreground">
-                  See your daily profit/loss at a glance. Make smarter business decisions.
+                  See your daily profit/loss at a glance. Make smarter business
+                  decisions.
                 </p>
               </div>
             </div>
@@ -109,7 +123,7 @@ export default function Index() {
             <p className="text-muted-foreground mb-6">
               Join thousands of shopkeepers already using ShopSense.
             </p>
-            <Button size="lg" onClick={() => navigate("/auth")}>
+            <Button size="lg" onClick={() => navigate('/auth')}>
               Start Free Today
             </Button>
           </div>

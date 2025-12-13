@@ -1,14 +1,28 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/api/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { Store, Package, Receipt, Calendar, BarChart3, History, Bell, AlertTriangle, TrendingDown } from "lucide-react";
-import { UserProfile } from "@/components/UserProfile";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CrazyLoader } from "@/components/CrazyLoader";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/api/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import {
+  Store,
+  Package,
+  Receipt,
+  Calendar,
+  BarChart3,
+  History,
+  Bell,
+  AlertTriangle,
+  TrendingDown,
+} from 'lucide-react';
+import { UserProfile } from '@/components/UserProfile';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { CrazyLoader } from '@/components/CrazyLoader';
 
 interface Profile {
   shopkeeper_name: string;
@@ -31,7 +45,6 @@ interface Notification {
   severity: 'warning' | 'alert' | 'critical';
 }
 
-
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -47,7 +60,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate("/auth");
+      navigate('/auth');
     }
   }, [user, loading, navigate]);
 
@@ -64,9 +77,9 @@ export default function Dashboard() {
       const data: any = await apiClient.get('/notifications');
       if (Array.isArray(data)) setNotifications(data);
     } catch (e) {
-      console.error("Failed to fetch notifications", e);
+      console.error('Failed to fetch notifications', e);
     }
-  }
+  };
 
   // ... fetchProfile and fetchInventoryStats ...
 
@@ -76,16 +89,16 @@ export default function Dashboard() {
       const data: any = await apiClient.get('/profile'); // fixed type
       if (data) setProfile(data);
     } catch (error) {
-      console.error("Failed to fetch profile:", error);
+      console.error('Failed to fetch profile:', error);
     }
   };
 
   const fetchInventoryStats = async () => {
     try {
-      console.log("Fetching stats...");
+      console.log('Fetching stats...');
       const [inventoryData, billsData] = await Promise.all([
         apiClient.get('/inventory'),
-        apiClient.get('/reports/bills')
+        apiClient.get('/reports/bills'),
       ]);
       // ... same logic as before ... assuming standard array handling
 
@@ -100,19 +113,32 @@ export default function Dashboard() {
 
       if (Array.isArray(inv)) {
         totalItems = inv.length;
-        totalValue = inv.reduce((sum: number, item: any) => sum + (item.selling_price * item.quantity), 0);
-        lowStockCount = inv.filter((item: any) => item.quantity > 0 && item.quantity <= 5).length;
+        totalValue = inv.reduce(
+          (sum: number, item: any) => sum + item.selling_price * item.quantity,
+          0,
+        );
+        lowStockCount = inv.filter(
+          (item: any) => item.quantity > 0 && item.quantity <= 5,
+        ).length;
         outOfStockCount = inv.filter((item: any) => item.quantity === 0).length;
       }
 
       if (Array.isArray(bills)) {
-        totalSales = bills.reduce((sum: number, b: any) => sum + Number(b.total_amount), 0);
+        totalSales = bills.reduce(
+          (sum: number, b: any) => sum + Number(b.total_amount),
+          0,
+        );
       }
 
-      setStats({ totalItems, totalValue, lowStockCount, outOfStockCount, totalSales });
-
+      setStats({
+        totalItems,
+        totalValue,
+        lowStockCount,
+        outOfStockCount,
+        totalSales,
+      });
     } catch (error) {
-      console.error("Failed to fetch stats:", error);
+      console.error('Failed to fetch stats:', error);
     }
   };
 
@@ -148,16 +174,30 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   notifications.map((notif, i) => (
-                    <div key={i} className="p-4 border-b last:border-0 flex gap-3 hover:bg-muted/50">
-                      <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${notif.severity === 'critical' ? 'bg-red-500' :
-                        notif.severity === 'alert' ? 'bg-orange-500' : 'bg-yellow-500'
-                        }`} />
+                    <div
+                      key={i}
+                      className="p-4 border-b last:border-0 flex gap-3 hover:bg-muted/50"
+                    >
+                      <div
+                        className={`mt-1 h-2 w-2 rounded-full shrink-0 ${
+                          notif.severity === 'critical'
+                            ? 'bg-red-500'
+                            : notif.severity === 'alert'
+                              ? 'bg-orange-500'
+                              : 'bg-yellow-500'
+                        }`}
+                      />
                       <div>
                         <p className="text-sm font-medium leading-none mb-1">
-                          {notif.type === 'low_stock' ? 'Low Stock' :
-                            notif.type === 'low_profit' ? 'Low Profit' : 'Attention'}
+                          {notif.type === 'low_stock'
+                            ? 'Low Stock'
+                            : notif.type === 'low_profit'
+                              ? 'Low Profit'
+                              : 'Attention'}
                         </p>
-                        <p className="text-xs text-muted-foreground">{notif.message}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {notif.message}
+                        </p>
                       </div>
                     </div>
                   ))
@@ -167,7 +207,10 @@ export default function Dashboard() {
           </Popover>
 
           <ThemeToggle />
-          <UserProfile initialProfile={profile} onProfileUpdate={fetchProfile} />
+          <UserProfile
+            initialProfile={profile}
+            onProfileUpdate={fetchProfile}
+          />
         </div>
       </header>
 
@@ -175,8 +218,12 @@ export default function Dashboard() {
       <main className="flex-1 p-6 container mx-auto">
         {/* Welcome Section */}
         <section className="mb-8">
-          <h2 className="text-3xl font-semibold mb-1">Welcome, {profile?.shopkeeper_name || "Shopkeeper"}!</h2>
-          <p className="text-muted-foreground text-lg">{profile?.shop_name || "Loading..."}</p>
+          <h2 className="text-3xl font-semibold mb-1">
+            Welcome, {profile?.shopkeeper_name || 'Shopkeeper'}!
+          </h2>
+          <p className="text-muted-foreground text-lg">
+            {profile?.shop_name || 'Loading...'}
+          </p>
         </section>
 
         {/* Inventory Stats */}
@@ -184,36 +231,54 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <Card className="shadow-sm border-border/50">
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Total Items</p>
-                <p className="text-2xl font-semibold text-foreground">{stats.totalItems}</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Total Items
+                </p>
+                <p className="text-2xl font-semibold text-foreground">
+                  {stats.totalItems}
+                </p>
               </CardContent>
             </Card>
 
             <Card className="shadow-sm border-border/50">
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Total Sales</p>
-                <p className="text-2xl font-semibold text-foreground">₹{stats.totalSales.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Total Sales
+                </p>
+                <p className="text-2xl font-semibold text-foreground">
+                  ₹{stats.totalSales.toLocaleString()}
+                </p>
               </CardContent>
             </Card>
 
             <Card className="shadow-sm border-border/50">
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Inventory Value</p>
-                <p className="text-2xl font-semibold text-foreground">₹{stats.totalValue.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Inventory Value
+                </p>
+                <p className="text-2xl font-semibold text-foreground">
+                  ₹{stats.totalValue.toLocaleString()}
+                </p>
               </CardContent>
             </Card>
 
             <Card className="shadow-sm border-border/50">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground mb-1">Low Stock</p>
-                <p className="text-2xl font-semibold text-foreground">{stats.lowStockCount}</p>
+                <p className="text-2xl font-semibold text-foreground">
+                  {stats.lowStockCount}
+                </p>
               </CardContent>
             </Card>
 
             <Card className="shadow-sm border-border/50">
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Out of Stock</p>
-                <p className="text-2xl font-semibold text-foreground">{stats.outOfStockCount}</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Out of Stock
+                </p>
+                <p className="text-2xl font-semibold text-foreground">
+                  {stats.outOfStockCount}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -224,22 +289,22 @@ export default function Dashboard() {
           <ActionCard
             icon={<Package className="h-5 w-5" />}
             title="Inventory"
-            onClick={() => navigate("/inventory")}
+            onClick={() => navigate('/inventory')}
           />
           <ActionCard
             icon={<Receipt className="h-5 w-5" />}
             title="Billing"
-            onClick={() => navigate("/billing")}
+            onClick={() => navigate('/billing')}
           />
           <ActionCard
             icon={<BarChart3 className="h-5 w-5" />}
             title="Reports"
-            onClick={() => navigate("/reports")}
+            onClick={() => navigate('/reports')}
           />
           <ActionCard
             icon={<History className="h-5 w-5" />}
             title="Bill History"
-            onClick={() => navigate("/bill-history")}
+            onClick={() => navigate('/bill-history')}
           />
         </div>
       </main>
@@ -247,9 +312,20 @@ export default function Dashboard() {
   );
 }
 
-function ActionCard({ icon, title, onClick }: { icon: React.ReactNode, title: string, onClick: () => void }) {
+function ActionCard({
+  icon,
+  title,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  onClick: () => void;
+}) {
   return (
-    <Card className="shadow-sm border-border/50 hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
+    <Card
+      className="shadow-sm border-border/50 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={onClick}
+    >
       <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
         <div className="flex items-center gap-3 text-foreground font-medium">
           <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-md text-green-700 dark:text-green-400">
