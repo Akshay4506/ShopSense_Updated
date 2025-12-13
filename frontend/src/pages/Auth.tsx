@@ -26,6 +26,7 @@ import {
   Timer,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { CrazyLoader } from "@/components/CrazyLoader";
 import { apiClient } from '@/api/client';
 
 export default function Auth() {
@@ -47,8 +48,10 @@ export default function Auth() {
   const [newPassword, setNewPassword] = useState('');
   const [countdown, setCountdown] = useState(0); // Resend timer
 
-  const { login: authLogin, loginWithToken, user } = useAuth();
+  const { login: authLogin, loginWithToken, user, loading: authLoading } = useAuth(); // Rename to avoid conflict with local loading
   const { toast } = useToast();
+
+
 
   useEffect(() => {
     if (user) {
@@ -217,6 +220,10 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return <CrazyLoader />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background text-foreground">

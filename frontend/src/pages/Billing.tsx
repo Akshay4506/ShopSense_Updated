@@ -176,6 +176,42 @@ export default function Billing() {
       nune: 'oil',
       ఉప్పు: 'salt',
       uppu: 'salt',
+      చింతపండు: 'tamarind',
+      chintapandu: 'tamarind',
+      కొబ్బరి: 'coconut',
+      kobbari: 'coconut',
+      అల్లం: 'ginger',
+      allam: 'ginger',
+      వెల్లుల్లి: 'garlic',
+      vellulli: 'garlic',
+      జీలకర్ర: 'cumin',
+      jeelakarra: 'cumin',
+      ధనియాలు: 'coriander seeds',
+      dhaniyaalu: 'coriander seeds',
+      పసుపు: 'turmeric',
+      pasupu: 'turmeric',
+      ఆవాలు: 'mustard seeds',
+      aavaalu: 'mustard seeds',
+      శెనగపప్పు: 'chana dal',
+      senagapappu: 'chana dal',
+      మినప్పప్పు: 'urad dal',
+      minappappu: 'urad dal',
+      కందిపప్పు: 'toor dal',
+      kandipappu: 'toor dal',
+      రవ్వ: 'semolina',
+      ravva: 'semolina',
+      గోధుమలు: 'wheat',
+      godhumalu: 'wheat',
+      సగ్గుబియ్యం: 'sabudana',
+      saggubiyyam: 'sabudana',
+      కొత్తిమీర: 'coriander leaves',
+      kottimeera: 'coriander leaves',
+      కరివేపాకు: 'curry leaves',
+      karivepaaku: 'curry leaves',
+      జాగ్గరి: 'jaggery',
+      bellam: 'jaggery',
+      నెయ్యి: 'ghee',
+      neyyi: 'ghee',
     };
 
     // Auto-translate if applicable
@@ -219,6 +255,40 @@ export default function Billing() {
     };
   };
 
+  // Helper to convert units
+  const convertQuantity = (qty: number, fromUnit: string, toUnit: string): number => {
+    console.log(`[DEBUG] Converting ${qty} from '${fromUnit}' to '${toUnit}'`);
+
+    const normalize = (u: string) => {
+      u = (u || '').toLowerCase().trim();
+      // Mass - Kg
+      if (['kg', 'kgs', 'kilogram', 'kilograms', 'kilo', 'కిలో', 'కిలోలు', 'కేజీ'].includes(u)) return 'kg';
+      // Mass - Grams
+      if (['g', 'gm', 'gms', 'gram', 'grams', 'గ్రాము', 'గ్రాముల', 'గ్రా'].includes(u)) return 'g';
+      // Volume - Litres
+      if (['l', 'ltr', 'litre', 'litres', 'liter', 'liters', 'li', 'లీటర్', 'లీటర్లు'].includes(u)) return 'l';
+      // Volume - ML
+      if (['ml', 'millilitre', 'millilitres', 'milliliter', 'milliliters', 'మిల్లీలీటర్', 'మిల్లీ', 'ఎమ్.ఎల్.', 'ఎం.ఎల్.', 'ఎమ్.ఎల్', 'ఎం.ఎల్', 'ఎం', 'ఎమ్'].includes(u)) return 'ml';
+      return u;
+    };
+
+    const from = normalize(fromUnit);
+    const to = normalize(toUnit);
+
+    if (from === to) return qty;
+
+    // Mass
+    if (from === 'kg' && to === 'g') return qty * 1000;
+    if (from === 'g' && to === 'kg') return qty / 1000;
+
+    // Volume
+    if (from === 'l' && to === 'ml') return qty * 1000;
+    if (from === 'ml' && to === 'l') return qty / 1000;
+
+    // Fallback (incompatible or unknown)
+    return qty;
+  };
+
   const processAddItem = async (inputSafe: string): Promise<boolean> => {
     if (!inputSafe) return false;
     setIsProcessing(true);
@@ -238,6 +308,13 @@ export default function Billing() {
         setIsProcessing(false);
         return false;
       }
+
+      // Convert requested quantity to inventory unit
+      const convertedQty = convertQuantity(data.quantity, data.unit, matchedItem.unit);
+
+      // Update data to use the converted values for consistency
+      data.quantity = convertedQty;
+      data.unit = matchedItem.unit; // Normalize unit to match inventory
 
       if (matchedItem.quantity === 0) {
         toast({

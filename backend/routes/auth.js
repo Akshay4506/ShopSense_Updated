@@ -107,14 +107,18 @@ router.post('/send-login-otp', async (req, res) => {
         console.log(`[DEV ONLY] Login OTP for ${email}: ${otp}`);
 
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            await transporter.sendMail(mailOptions);
+            try {
+                await transporter.sendMail(mailOptions);
+            } catch (emailErr) {
+                console.error("Failed to send login email (Dev Mode - continuing):", emailErr.message);
+            }
         }
 
         res.json({ message: 'Login code sent to your email.' });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
+        console.error("OTP Error:", error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -170,10 +174,12 @@ router.post('/login-with-otp', async (req, res) => {
 // Forgot Password - Send OTP
 router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
+    console.log(`[DEBUG] Forgot Password request for: ${email}`);
 
     try {
         const userResult = await db.query('SELECT * FROM users WHERE email = $1', [email]);
         if (userResult.rows.length === 0) {
+            console.log(`[DEBUG] User not found: ${email}`);
             return res.json({ message: 'If the email exists, an OTP has been sent.' });
         }
 
@@ -184,6 +190,7 @@ router.post('/forgot-password', async (req, res) => {
             'UPDATE users SET otp = $1, otp_expires_at = $2 WHERE email = $3',
             [otp, expiresAt, email]
         );
+        console.log(`[DEBUG] OTP stored in DB for ${email}`);
 
         const mailOptions = {
             from: process.env.EMAIL_USER,
@@ -195,14 +202,21 @@ router.post('/forgot-password', async (req, res) => {
         console.log(`[DEV ONLY] Reset OTP for ${email}: ${otp}`);
 
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            await transporter.sendMail(mailOptions);
+            try {
+                await transporter.sendMail(mailOptions);
+                console.log(`[DEBUG] Email sent successfully to ${email}`);
+            } catch (emailErr) {
+                console.error("Failed to send reset email (Dev Mode - continuing):", emailErr.message);
+            }
+        } else {
+            console.log(`[DEBUG] Email credentials missing, skipping sendMail`);
         }
 
         res.json({ message: 'If the email exists, an OTP has been sent.' });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
+        console.error("Forgot Password Error:", error);
+        res.status(500).json({ error: error.message });
     }
 });
 
