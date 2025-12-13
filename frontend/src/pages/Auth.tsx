@@ -74,7 +74,8 @@ export default function Auth() {
     try {
       await authLogin(email, password);
       navigate('/dashboard');
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as any;
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -101,8 +102,13 @@ export default function Auth() {
         title: 'Success',
         description: 'Account created! Please login.',
       });
+      toast({
+        title: 'Success',
+        description: 'Account created! Please login.',
+      });
       setView('login');
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as any;
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -132,7 +138,8 @@ export default function Auth() {
       });
       setView('login-otp-verify');
       startTimer();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as any;
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -151,7 +158,8 @@ export default function Auth() {
       // console.log("OTP Login Response:", res);
       loginWithToken(res.token, res.user);
       navigate('/dashboard');
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as any;
       // console.error("OTP Login Error:", error);
       toast({
         variant: 'destructive',
@@ -183,7 +191,8 @@ export default function Auth() {
       });
       setView('reset-password');
       startTimer();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as any;
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -207,7 +216,8 @@ export default function Auth() {
       setPassword('');
       setNewPassword('');
       setOtp('');
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as any;
       toast({
         variant: 'destructive',
         title: 'Error',

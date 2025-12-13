@@ -42,6 +42,15 @@ interface Notification {
   severity: 'warning' | 'alert' | 'critical';
 }
 
+interface InventoryItem {
+  selling_price: number;
+  quantity: number;
+}
+
+interface Bill {
+  total_amount: number | string;
+}
+
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -57,7 +66,7 @@ export default function Dashboard() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const data: any = await apiClient.get('/profile');
+      const data = (await apiClient.get('/profile')) as Profile;
       if (data) setProfile(data);
     } catch (error) {
       console.error('Failed to fetch profile:', error);
@@ -78,24 +87,24 @@ export default function Dashboard() {
       let outOfStockCount = 0;
       let totalSales = 0;
 
-      const inv = inventoryData as any[];
-      const bills = billsData as any[];
+      const inv = inventoryData as InventoryItem[];
+      const bills = billsData as Bill[];
 
       if (Array.isArray(inv)) {
         totalItems = inv.length;
         totalValue = inv.reduce(
-          (sum: number, item: any) => sum + item.selling_price * item.quantity,
+          (sum: number, item) => sum + item.selling_price * item.quantity,
           0,
         );
         lowStockCount = inv.filter(
-          (item: any) => item.quantity > 0 && item.quantity <= 5,
+          (item) => item.quantity > 0 && item.quantity <= 5,
         ).length;
-        outOfStockCount = inv.filter((item: any) => item.quantity === 0).length;
+        outOfStockCount = inv.filter((item) => item.quantity === 0).length;
       }
 
       if (Array.isArray(bills)) {
         totalSales = bills.reduce(
-          (sum: number, b: any) => sum + Number(b.total_amount),
+          (sum: number, b) => sum + Number(b.total_amount),
           0,
         );
       }
@@ -114,7 +123,7 @@ export default function Dashboard() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const data: any = await apiClient.get('/notifications');
+      const data = (await apiClient.get('/notifications')) as Notification[];
       if (Array.isArray(data)) setNotifications(data);
     } catch (e) {
       console.error('Failed to fetch notifications', e);
