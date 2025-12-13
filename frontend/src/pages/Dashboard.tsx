@@ -5,8 +5,10 @@ import { apiClient } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Store, Package, Receipt, Calendar, BarChart3, History } from "lucide-react";
+import { Store, Package, Receipt, Calendar, BarChart3, History, Bell, AlertTriangle, TrendingDown } from "lucide-react";
 import { UserProfile } from "@/components/UserProfile";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CrazyLoader } from "@/components/CrazyLoader";
 
 interface Profile {
   shopkeeper_name: string;
@@ -23,6 +25,13 @@ interface InventoryStats {
   totalSales: number;
 }
 
+interface Notification {
+  type: 'low_stock' | 'low_profit' | 'loss';
+  message: string;
+  severity: 'warning' | 'alert' | 'critical';
+}
+
+
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -34,6 +43,7 @@ export default function Dashboard() {
     outOfStockCount: 0,
     totalSales: 0,
   });
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -45,12 +55,25 @@ export default function Dashboard() {
     if (user) {
       fetchProfile();
       fetchInventoryStats();
+      fetchNotifications();
     }
   }, [user]);
 
+  const fetchNotifications = async () => {
+    try {
+      const data: any = await apiClient.get('/notifications');
+      if (Array.isArray(data)) setNotifications(data);
+    } catch (e) {
+      console.error("Failed to fetch notifications", e);
+    }
+  }
+
+  // ... fetchProfile and fetchInventoryStats ...
+
+  // Fetch Logic (Keeping existing logic intact, just ensuring no syntax breaks)
   const fetchProfile = async () => {
     try {
-      const data = await apiClient.get('/profile');
+      const data: any = await apiClient.get('/profile'); // fixed type
       if (data) setProfile(data);
     } catch (error) {
       console.error("Failed to fetch profile:", error);
@@ -64,9 +87,7 @@ export default function Dashboard() {
         apiClient.get('/inventory'),
         apiClient.get('/reports/bills')
       ]);
-
-      console.log("Inventory Data:", inventoryData);
-      console.log("Bills Data:", billsData);
+      // ... same logic as before ... assuming standard array handling
 
       let totalItems = 0;
       let totalValue = 0;
@@ -74,32 +95,29 @@ export default function Dashboard() {
       let outOfStockCount = 0;
       let totalSales = 0;
 
-      if (Array.isArray(inventoryData)) {
-        totalItems = inventoryData.length;
-        totalValue = inventoryData.reduce((sum: number, item: any) => sum + (item.selling_price * item.quantity), 0);
-        lowStockCount = inventoryData.filter((item: any) => item.quantity > 0 && item.quantity <= 5).length;
-        outOfStockCount = inventoryData.filter((item: any) => item.quantity === 0).length;
+      const inv = inventoryData as any[];
+      const bills = billsData as any[];
+
+      if (Array.isArray(inv)) {
+        totalItems = inv.length;
+        totalValue = inv.reduce((sum: number, item: any) => sum + (item.selling_price * item.quantity), 0);
+        lowStockCount = inv.filter((item: any) => item.quantity > 0 && item.quantity <= 5).length;
+        outOfStockCount = inv.filter((item: any) => item.quantity === 0).length;
       }
 
-      if (Array.isArray(billsData)) {
-        totalSales = billsData.reduce((sum: number, b: any) => sum + Number(b.total_amount), 0);
-        console.log("Calculated Total Sales:", totalSales);
-      } else {
-        console.error("Bills data is not an array:", billsData);
+      if (Array.isArray(bills)) {
+        totalSales = bills.reduce((sum: number, b: any) => sum + Number(b.total_amount), 0);
       }
 
       setStats({ totalItems, totalValue, lowStockCount, outOfStockCount, totalSales });
+
     } catch (error) {
       console.error("Failed to fetch stats:", error);
     }
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
+    return <CrazyLoader />;
   }
 
   return (
@@ -108,9 +126,46 @@ export default function Dashboard() {
       <header className="border-b bg-card text-card-foreground py-4 px-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Store className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold">Shop Dashboard</h1>
+          <h1 className="text-2xl font-bold">ShopSense</h1>
         </div>
         <div className="flex items-center gap-4">
+          {/* Notifications Bell */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border border-background" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              <div className="p-4 border-b font-medium">Notifications</div>
+              <div className="max-h-[300px] overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    No new notifications
+                  </div>
+                ) : (
+                  notifications.map((notif, i) => (
+                    <div key={i} className="p-4 border-b last:border-0 flex gap-3 hover:bg-muted/50">
+                      <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${notif.severity === 'critical' ? 'bg-red-500' :
+                        notif.severity === 'alert' ? 'bg-orange-500' : 'bg-yellow-500'
+                        }`} />
+                      <div>
+                        <p className="text-sm font-medium leading-none mb-1">
+                          {notif.type === 'low_stock' ? 'Low Stock' :
+                            notif.type === 'low_profit' ? 'Low Profit' : 'Attention'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{notif.message}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <ThemeToggle />
           <UserProfile initialProfile={profile} onProfileUpdate={fetchProfile} />
         </div>

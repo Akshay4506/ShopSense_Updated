@@ -25,6 +25,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { Store, ArrowLeft, Plus, Search, Edit2, Trash2, AlertTriangle } from "lucide-react";
 
+import { CrazyLoader } from "@/components/CrazyLoader";
+
 interface InventoryItem {
   id: string;
   item_name: string;
@@ -191,11 +193,7 @@ export default function Inventory() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
+    return <CrazyLoader />;
   }
 
   return (

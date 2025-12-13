@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Store, Package, Receipt, TrendingUp, ArrowRight, Loader2 } from "lucide-react";
+import { CrazyLoader } from "@/components/CrazyLoader";
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -16,11 +17,7 @@ export default function Index() {
   }, [user, loading, navigate]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <CrazyLoader />;
   }
 
   return (
@@ -48,7 +45,7 @@ export default function Index() {
               Smart Dukaan Management
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              The simple, powerful way to manage your kirana store. Track inventory, 
+              The simple, powerful way to manage your kirana store. Track inventory,
               create bills, and grow your business.
             </p>
             <Button size="lg" onClick={() => navigate("/auth")} className="gap-2">

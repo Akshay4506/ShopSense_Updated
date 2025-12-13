@@ -1,4 +1,4 @@
-export const API_URL = 'http://localhost:3000/api';
+export const API_URL = 'http://172.23.160.1:3000/api';
 
 const getHeaders = () => {
     const token = localStorage.getItem('token');

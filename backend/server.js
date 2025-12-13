@@ -9,6 +9,7 @@ const inventoryRoutes = require('./routes/inventory');
 const billingRoutes = require('./routes/billing');
 const dailyOperationsRoutes = require('./routes/daily-operations');
 const reportsRoutes = require('./routes/reports');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +41,7 @@ app.use('/api/inventory', authenticateToken, inventoryRoutes);
 app.use('/api/billing', authenticateToken, billingRoutes);
 app.use('/api/daily-operations', authenticateToken, dailyOperationsRoutes);
 app.use('/api/reports', authenticateToken, reportsRoutes);
+app.use('/api/notifications', authenticateToken, notificationRoutes);
 
 app.get('/', (req, res) => {
     res.send('ShopSense API is running');

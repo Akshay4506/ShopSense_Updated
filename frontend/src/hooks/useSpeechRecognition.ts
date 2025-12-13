@@ -1,64 +1,121 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
-interface UseSpeechRecognitionProps {
-  onResult: (transcript: string) => void;
-  onError?: (error: string) => void;
+export interface SpeechRecognitionHook {
+    isListening: boolean;
+    transcript: string;
+    startListening: () => void;
+    stopListening: () => void;
+    resetTranscript: () => void;
+    hasRecognitionSupport: boolean;
+    error: string | null;
 }
 
-export function useSpeechRecognition({ onResult, onError }: UseSpeechRecognitionProps) {
-  const [isListening, setIsListening] = useState(false);
-  const [isSupported, setIsSupported] = useState(false);
+export default function useSpeechRecognition(
+    onResultCallback?: (transcript: string) => void,
+    language: string = "en-IN"
+): SpeechRecognitionHook {
+    const [isListening, setIsListening] = useState(false);
+    const [transcript, setTranscript] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [hasRecognitionSupport, setHasRecognitionSupport] = useState(false);
 
-  useEffect(() => {
-    // Check if speech recognition is supported
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setIsSupported(!!SpeechRecognition);
-  }, []);
+    // Use a ref to access the latest callback without re-creating the recognition instance
+    const callbackRef = useRef(onResultCallback);
 
-  const startListening = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-      onError?.("Speech recognition is not supported in this browser");
-      return;
-    }
+    useEffect(() => {
+        callbackRef.current = onResultCallback;
+    }, [onResultCallback]);
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = "hi-IN"; // Hindi for Indian users, also understands English
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    const recognitionRef = useRef<any>(null);
 
-    recognition.onstart = () => {
-      setIsListening(true);
+    useEffect(() => {
+        // Check for browser support
+        if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+            setHasRecognitionSupport(true);
+            const SpeechRecognition =
+                (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = language; // Dynamic language
+
+            recognition.onstart = () => {
+                setIsListening(true);
+                setError(null);
+            };
+
+            recognition.onresult = (event: any) => {
+                let finalTranscript = "";
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                const trimmed = finalTranscript.trim();
+                if (trimmed) {
+                    setTranscript(trimmed);
+                    if (callbackRef.current) {
+                        callbackRef.current(trimmed);
+                    }
+                }
+            };
+
+            recognition.onerror = (event: any) => {
+                console.error("Speech recognition error", event.error);
+                if (event.error === 'not-allowed') {
+                    setError("Microphone access denied.");
+                } else {
+                    setError(event.error);
+                }
+                setIsListening(false);
+            };
+
+            recognition.onend = () => {
+                setIsListening(false);
+            };
+
+            recognitionRef.current = recognition;
+        } else {
+            setHasRecognitionSupport(false);
+            setError("Browser verification failed: Web Speech API not supported.");
+        }
+
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+        };
+    }, [language]); // Re-initialize when language changes
+
+    const startListening = useCallback(() => {
+        if (recognitionRef.current && !isListening) {
+            try {
+                recognitionRef.current.start();
+            } catch (e) {
+                console.error("Failed to start recognition", e);
+            }
+        }
+    }, [isListening]);
+
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current && isListening) {
+            recognitionRef.current.stop();
+        }
+    }, [isListening]);
+
+    const resetTranscript = useCallback(() => {
+        setTranscript("");
+    }, []);
+
+    return {
+        isListening,
+        transcript,
+        startListening,
+        stopListening,
+        resetTranscript,
+        hasRecognitionSupport,
+        error
     };
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      onResult(transcript);
-      setIsListening(false);
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error);
-      onError?.(event.error);
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.start();
-  }, [onResult, onError]);
-
-  const stopListening = useCallback(() => {
-    setIsListening(false);
-  }, []);
-
-  return {
-    isListening,
-    isSupported,
-    startListening,
-    stopListening,
-  };
 }
